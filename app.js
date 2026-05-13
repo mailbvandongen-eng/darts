@@ -1,4 +1,8 @@
-const { lastUpdated, dartsPlayers, plDartsStandings, dartsCalendar } = window.DARTS_DATA;
+const dartsData = window.DARTS_DATA;
+const updatedAt = dartsData.lastUpdated;
+const playersData = dartsData.dartsPlayers;
+const standingsData = dartsData.plDartsStandings;
+const calendarData = dartsData.dartsCalendar;
 
 const state = {
   query: '',
@@ -8,7 +12,7 @@ const state = {
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
-const playerMap = Object.fromEntries(Object.entries(dartsPlayers).map(([key, value]) => [key, value.name]));
+const playerMap = Object.fromEntries(Object.entries(playersData).map(([key, value]) => [key, value.name]));
 
 function normalizeEventName(name) {
   return name.replace(' - Finale', '').replace(' - Play-Offs', '').trim();
@@ -41,7 +45,7 @@ function formatMatch(match) {
   return away ? `${home} vs ${away}` : home;
 }
 
-const parsedEvents = dartsCalendar.map((event, index) => ({
+const parsedEvents = calendarData.map((event, index) => ({
   ...event,
   id: `event-${index}`,
   title: event.event,
@@ -116,7 +120,7 @@ function renderSummary(days) {
     <article class="summary-card">
       <div class="summary-label">Sessies</div>
       <div class="summary-value">${parsedEvents.length}</div>
-      <div class="meta">Bijgewerkt ${lastUpdated}</div>
+      <div class="meta">Bijgewerkt ${updatedAt}</div>
     </article>
     <article class="summary-card">
       <div class="summary-label">Toernooien</div>
@@ -227,7 +231,7 @@ function bindAccordion() {
 }
 
 function renderStandings() {
-  document.getElementById('standings-body').innerHTML = plDartsStandings.map((row) => `
+  document.getElementById('standings-body').innerHTML = standingsData.map((row) => `
     <tr>
       <td>${row.pos}</td>
       <td>${escapeHtml(row.name)}</td>

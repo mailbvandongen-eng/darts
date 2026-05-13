@@ -1,4 +1,4 @@
-const CACHE_NAME = 'darts-planner-v2';
+const CACHE_NAME = 'darts-planner-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './data.js', './app.js'];
 
 self.addEventListener('install', (event) => {
@@ -17,3 +17,4 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
 });
+
