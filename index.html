@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111827">
-  <meta name="description" content="Darts: PDC toernooien, schema's en Premier League overzicht.">
+  <meta name="description" content="Darts: PDC kalender per datum, schema's en toernooi-info.">
   <title>Darts</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
     :root {
-      --bg: #f7f7f8;
+      --bg: #f5f6f8;
       --surface: #ffffff;
-      --surface-2: #f3f4f6;
+      --surface-soft: #f9fafb;
+      --header: #111827;
       --text: #111827;
       --muted: #6b7280;
       --line: #e5e7eb;
       --accent: #ea580c;
-      --accent-dark: #c2410c;
-      --shadow: 0 8px 24px rgba(17,24,39,.08);
+      --accent-soft: #fff7ed;
+      --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
       --radius: 14px;
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -29,259 +31,217 @@
       color: var(--text);
     }
     button, input { font: inherit; }
-    .app {
-      max-width: 860px;
-      margin: 0 auto;
-      min-height: 100vh;
-      background: var(--bg);
-    }
-    .topbar {
+    .app { max-width: 920px; margin: 0 auto; min-height: 100vh; }
+    .header {
       position: sticky;
       top: 0;
-      z-index: 20;
-      background: #111827;
+      z-index: 50;
+      background: var(--header);
       color: #fff;
-      padding: 14px 16px 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,.12);
     }
-    .topbar-title {
-      font-size: 1.15rem;
-      font-weight: 700;
+    .header-main {
+      padding: 12px 16px 10px;
     }
-    .topbar-sub {
-      margin-top: 4px;
-      color: rgba(255,255,255,.72);
-      font-size: .86rem;
-    }
+    .title { font-size: 1.15rem; font-weight: 700; }
+    .subtitle { margin-top: 4px; color: rgba(255,255,255,.72); font-size: .84rem; }
     .toolbar {
+      padding: 0 16px 12px;
       display: grid;
       gap: 10px;
-      padding: 14px 16px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--line);
     }
     .search {
       width: 100%;
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: 12px;
       padding: 12px 14px;
-      background: var(--surface-2);
+      background: rgba(255,255,255,.12);
+      color: #fff;
     }
-    .chips {
+    .search::placeholder { color: rgba(255,255,255,.64); }
+    .series-row,
+    .date-tabs {
       display: flex;
       gap: 8px;
       overflow-x: auto;
       padding-bottom: 2px;
+      scrollbar-width: none;
     }
-    .chip {
+    .series-row::-webkit-scrollbar,
+    .date-tabs::-webkit-scrollbar { display: none; }
+    .chip,
+    .date-tab {
       flex: 0 0 auto;
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--text);
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.86);
       border-radius: 999px;
-      padding: 9px 12px;
+      padding: 8px 12px;
       cursor: pointer;
     }
-    .chip.active {
+    .chip.active,
+    .date-tab.active {
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
     }
-    .content {
-      padding: 14px 16px 32px;
+    .date-strip {
+      position: sticky;
+      top: 122px;
+      z-index: 40;
+      background: rgba(245, 246, 248, .96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 16px;
     }
-    .section {
-      margin-bottom: 18px;
+    .content { padding: 16px; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .summary-card,
+    .day-section,
+    .competition-block,
+    .event-row,
+    .event-details,
+    .standings-wrap {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .summary-card {
+      padding: 14px;
+    }
+    .summary-label {
+      color: var(--muted);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .summary-value {
+      margin-top: 8px;
+      font-size: 1.35rem;
+      font-weight: 800;
     }
     .section-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      margin-bottom: 10px;
+      margin: 18px 0 10px;
     }
     .section-head h2 {
       margin: 0;
       font-size: 1rem;
     }
-    .meta {
-      color: var(--muted);
-      font-size: .86rem;
-    }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .next-card {
+    .meta { color: var(--muted); font-size: .86rem; }
+    .day-list { display: grid; gap: 14px; }
+    .day-section {
       padding: 14px;
+      scroll-margin-top: 184px;
     }
-    .next-title {
-      font-weight: 700;
-      font-size: 1rem;
-      margin-bottom: 6px;
-    }
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .pill {
-      background: #fff7ed;
-      color: var(--accent-dark);
-      border: 1px solid #fed7aa;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: .78rem;
-      font-weight: 600;
-    }
-    .list {
-      display: grid;
-      gap: 10px;
-    }
-    .event-card {
-      padding: 14px;
-      cursor: pointer;
-      transition: border-color .15s ease, transform .15s ease;
-    }
-    .event-card:hover {
-      border-color: #fdba74;
-      transform: translateY(-1px);
-    }
-    .event-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .event-title {
-      font-weight: 700;
-      margin: 0 0 6px;
-      font-size: 1rem;
-    }
-    .event-sub {
-      color: var(--muted);
-      font-size: .9rem;
-    }
-    .badge {
-      flex: 0 0 auto;
-      border-radius: 999px;
-      background: #fff7ed;
-      color: var(--accent-dark);
-      padding: 6px 10px;
-      font-size: .76rem;
-      font-weight: 700;
-    }
-    .empty {
-      padding: 18px;
-      text-align: center;
-      color: var(--muted);
-    }
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(17,24,39,.54);
-      display: none;
-      z-index: 40;
-    }
-    .overlay.open {
-      display: block;
-    }
-    .drawer {
-      position: absolute;
-      inset: auto 0 0 0;
-      max-height: 88vh;
-      background: var(--bg);
-      border-radius: 18px 18px 0 0;
-      overflow: auto;
-      box-shadow: 0 -10px 30px rgba(0,0,0,.18);
-    }
-    .drawer-head {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: var(--surface);
-      border-bottom: 1px solid var(--line);
-      padding: 14px 16px;
-    }
-    .drawer-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .close-btn {
-      border: 0;
-      background: var(--surface-2);
-      border-radius: 10px;
-      padding: 10px 12px;
-      cursor: pointer;
-    }
-    .drawer-title {
-      margin: 0;
-      font-size: 1.1rem;
-    }
-    .drawer-body {
-      padding: 14px 16px 24px;
-    }
-    .session-card {
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .session-head {
+    .day-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
     }
-    .session-title {
-      margin: 0;
-      font-size: .98rem;
+    .day-title { font-size: 1rem; font-weight: 700; }
+    .competition-list { display: grid; gap: 10px; }
+    .competition-block { overflow: hidden; }
+    .competition-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--line);
+    }
+    .competition-name { font-size: .92rem; font-weight: 800; text-transform: uppercase; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+      padding: 5px 9px;
+      font-size: .74rem;
       font-weight: 700;
     }
-    .match-list {
-      display: grid;
-      gap: 8px;
+    .event-list { display: grid; }
+    .event-row {
+      margin: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .15s ease;
     }
+    .event-row.open { border-color: #fdba74; }
+    .event-main {
+      display: grid;
+      grid-template-columns: 66px 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding: 12px 14px;
+    }
+    .time { color: #c2410c; font-weight: 800; }
+    .event-title { font-weight: 700; }
+    .event-sub { margin-top: 4px; color: var(--muted); font-size: .86rem; }
+    .expand { color: var(--muted); font-size: .9rem; }
+    .event-details {
+      display: none;
+      margin: 0 10px 10px;
+      padding: 12px 14px;
+      background: #fcfcfd;
+    }
+    .event-details.open { display: block; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .info-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 10px 12px;
+    }
+    .info-label { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; }
+    .info-value { margin-top: 6px; font-size: .92rem; font-weight: 600; }
+    .match-list { display: grid; gap: 8px; }
     .match-item {
       display: grid;
       grid-template-columns: 62px 1fr;
       gap: 10px;
+      align-items: start;
       padding-top: 8px;
       border-top: 1px solid var(--line);
     }
-    .match-item:first-child {
-      border-top: 0;
-      padding-top: 0;
-    }
-    .match-time {
-      color: var(--accent-dark);
-      font-weight: 700;
-      font-size: .9rem;
-    }
-    .match-text {
-      font-size: .94rem;
-    }
-    .mini-note {
-      margin-top: 4px;
+    .match-item:first-child { padding-top: 0; border-top: 0; }
+    .match-time { color: #c2410c; font-weight: 800; }
+    .match-text { font-size: .94rem; }
+    .match-note { margin-top: 4px; color: var(--muted); font-size: .82rem; }
+    .empty-state {
+      padding: 18px;
+      text-align: center;
       color: var(--muted);
-      font-size: .82rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
     }
-    .standings-table-wrap {
-      overflow-x: auto;
-    }
+    .standings-wrap { overflow-x: auto; }
     table {
       width: 100%;
-      border-collapse: collapse;
       min-width: 620px;
-      background: var(--surface);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
+      border-collapse: collapse;
     }
     th, td {
       padding: 11px 10px;
@@ -290,61 +250,54 @@
       font-size: .9rem;
     }
     th {
-      background: #fff7ed;
-      color: var(--accent-dark);
-      font-size: .78rem;
+      background: var(--accent-soft);
+      color: #c2410c;
       text-transform: uppercase;
       letter-spacing: .04em;
+      font-size: .76rem;
     }
-    @media (max-width: 640px) {
-      .content, .toolbar, .topbar, .drawer-head, .drawer-body { padding-left: 12px; padding-right: 12px; }
-      .event-top, .session-head { flex-direction: column; align-items: flex-start; }
+    @media (max-width: 720px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .date-strip { top: 154px; }
+      .event-main { grid-template-columns: 58px 1fr auto; }
+      .info-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <header class="topbar">
-      <div class="topbar-title">Darts</div>
-      <div class="topbar-sub">PDC toernooien, schema's en Premier League</div>
+    <header class="header">
+      <div class="header-main">
+        <div class="title">Darts</div>
+        <div class="subtitle">Lijst per datum, klikbare sessies en toernooi-info</div>
+      </div>
+      <div class="toolbar">
+        <input id="search-input" class="search" type="search" placeholder="Zoek toernooi, locatie of serie">
+        <div id="series-row" class="series-row"></div>
+      </div>
     </header>
 
-    <div class="toolbar">
-      <input id="search-input" class="search" type="search" placeholder="Zoek toernooi, plaats of serie">
-      <div id="series-chips" class="chips"></div>
+    <div class="date-strip">
+      <div id="date-tabs" class="date-tabs"></div>
     </div>
 
     <main class="content">
-      <section class="section">
+      <section class="summary-grid" id="summary-grid"></section>
+
+      <section>
         <div class="section-head">
-          <h2>Eerstvolgend</h2>
-          <div id="updated-label" class="meta"></div>
+          <h2>Kalender</h2>
+          <div id="calendar-meta" class="meta"></div>
         </div>
-        <div id="next-event" class="card next-card"></div>
+        <div id="day-list" class="day-list"></div>
       </section>
 
-      <section class="section">
-        <div class="section-head">
-          <h2>Komende sessies</h2>
-          <div id="session-count" class="meta"></div>
-        </div>
-        <div id="upcoming-list" class="list"></div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Toernooien</h2>
-          <div id="tournament-count" class="meta"></div>
-        </div>
-        <div id="tournament-list" class="list"></div>
-      </section>
-
-      <section class="section">
+      <section>
         <div class="section-head">
           <h2>Premier League Stand</h2>
           <div class="meta">Snapshot</div>
         </div>
-        <div class="standings-table-wrap">
+        <div class="standings-wrap">
           <table>
             <thead>
               <tr><th>Pos</th><th>Speler</th><th>Gespeeld</th><th>Halve</th><th>Finales</th><th>Winst</th><th>Punten</th></tr>
@@ -354,20 +307,6 @@
         </div>
       </section>
     </main>
-  </div>
-
-  <div id="detail-overlay" class="overlay" aria-hidden="true">
-    <div class="drawer">
-      <div class="drawer-head">
-        <div class="drawer-actions">
-          <button id="close-detail" class="close-btn" type="button">Sluiten</button>
-          <div id="detail-series" class="badge"></div>
-        </div>
-        <h2 id="detail-title" class="drawer-title"></h2>
-        <div id="detail-meta" class="meta"></div>
-      </div>
-      <div id="detail-body" class="drawer-body"></div>
-    </div>
   </div>
 
   <script src="data.js"></script>
