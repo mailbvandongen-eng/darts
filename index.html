@@ -3,609 +3,371 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c1222">
-  <meta name="description" content="Darts op je telefoon: PDC-kalender, spelerzoeker en je eigen kijkplanner met boards en kanalen.">
-  <title>Darts Planner</title>
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="Darts: PDC toernooien, schema's en Premier League overzicht.">
+  <title>Darts</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      color-scheme: light;
-      --bg: #eef3f8;
-      --bg-2: #dfe8f2;
-      --panel: rgba(255, 255, 255, 0.82);
-      --panel-strong: #ffffff;
-      --ink: #102038;
-      --muted: #5f7086;
-      --line: rgba(16, 32, 56, 0.1);
-      --accent: #df4c22;
-      --accent-2: #0d5d56;
-      --accent-3: #f3b63f;
-      --soft: rgba(13, 93, 86, 0.1);
-      --danger: #ab2f2f;
-      --shadow: 0 20px 48px rgba(16, 32, 56, 0.12);
-      --radius: 24px;
+      --bg: #f7f7f8;
+      --surface: #ffffff;
+      --surface-2: #f3f4f6;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #ea580c;
+      --accent-dark: #c2410c;
+      --shadow: 0 8px 24px rgba(17,24,39,.08);
+      --radius: 14px;
     }
-
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      color: var(--ink);
-      font-family: "IBM Plex Sans", sans-serif;
-      background:
-        radial-gradient(circle at top right, rgba(243, 182, 63, 0.34), transparent 24%),
-        radial-gradient(circle at left 10%, rgba(13, 93, 86, 0.18), transparent 28%),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
-
-    a { color: inherit; }
-    button, input, select, textarea { font: inherit; }
-    button { cursor: pointer; }
-
-    .app-shell {
-      width: min(1200px, calc(100vw - 20px));
+    button, input { font: inherit; }
+    .app {
+      max-width: 860px;
       margin: 0 auto;
-      padding: 14px 0 40px;
+      min-height: 100vh;
+      background: var(--bg);
     }
-
-    .hero {
+    .topbar {
       position: sticky;
       top: 0;
       z-index: 20;
-      padding: 18px;
-      margin-bottom: 18px;
-      border-radius: 0 0 30px 30px;
-      background: rgba(238, 243, 248, 0.88);
-      backdrop-filter: blur(18px);
-      border: 1px solid rgba(255, 255, 255, 0.75);
-      box-shadow: 0 12px 30px rgba(16, 32, 56, 0.08);
+      background: #111827;
+      color: #fff;
+      padding: 14px 16px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
     }
-
-    .eyebrow,
-    .chip,
-    .stat-label,
-    .tiny-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 999px;
-      padding: 7px 11px;
-      font-size: 0.75rem;
+    .topbar-title {
+      font-size: 1.15rem;
       font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
     }
-
-    .eyebrow { background: rgba(16, 32, 56, 0.07); color: var(--accent-2); }
-    .chip { background: rgba(223, 76, 34, 0.11); color: var(--accent); }
-    .tiny-label { background: rgba(13, 93, 86, 0.12); color: var(--accent-2); }
-
-    h1, h2, h3, h4 { margin: 0; font-family: "Sora", sans-serif; }
-    h1 {
-      margin-top: 14px;
-      font-size: clamp(2.4rem, 7vw, 4.8rem);
-      line-height: 0.92;
-      letter-spacing: -0.05em;
+    .topbar-sub {
+      margin-top: 4px;
+      color: rgba(255,255,255,.72);
+      font-size: .86rem;
     }
-
-    .subtitle {
-      margin: 12px 0 0;
-      max-width: 70ch;
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.5;
-    }
-
-    .hero-grid,
-    .stats-grid,
-    .search-layout,
-    .grid-two,
-    .players-grid,
-    .sessions-grid,
-    .tournament-grid,
-    .watch-grid {
+    .toolbar {
       display: grid;
-      gap: 14px;
-    }
-
-    .hero-grid { margin-top: 18px; grid-template-columns: 1.25fr 0.9fr; }
-    .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .grid-two { grid-template-columns: 1.1fr 0.9fr; }
-    .search-layout { grid-template-columns: 1.1fr 0.9fr; }
-    .players-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .sessions-grid, .watch-grid, .tournament-grid { grid-template-columns: 1fr; }
-
-    .panel,
-    .feature-card,
-    .stat-card,
-    .timeline-card,
-    .player-card,
-    .notice,
-    .search-card,
-    .watch-card,
-    .tournament-card,
-    .source-card {
-      background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.72);
-      box-shadow: var(--shadow);
-      border-radius: var(--radius);
-    }
-
-    .panel,
-    .feature-card,
-    .stat-card,
-    .timeline-card,
-    .player-card,
-    .notice,
-    .search-card,
-    .watch-card,
-    .tournament-card,
-    .source-card {
-      padding: 18px;
-    }
-
-    .feature-card {
-      background: linear-gradient(140deg, rgba(16, 32, 56, 0.96), rgba(8, 16, 35, 0.96));
-      color: #eef5ff;
-    }
-
-    .feature-card .meta,
-    .feature-card .helper,
-    .feature-card .support-copy { color: rgba(238, 245, 255, 0.78); }
-
-    .hero-actions,
-    .nav-pills,
-    .filter-row,
-    .search-toolbar,
-    .watch-actions,
-    .tournament-actions {
-      display: flex;
-      flex-wrap: wrap;
       gap: 10px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
     }
-
-    .nav-pills { margin-top: 16px; }
-
-    .btn,
-    .pill-link,
-    .chip-button,
-    .ghost-link {
-      border: 0;
-      border-radius: 16px;
-      padding: 12px 15px;
-      background: var(--panel-strong);
-      color: var(--ink);
-      text-decoration: none;
-      transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+    .search {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: var(--surface-2);
     }
-
-    .btn:hover,
-    .pill-link:hover,
-    .chip-button:hover,
-    .ghost-link:hover { transform: translateY(-1px); }
-
-    .btn-primary { background: var(--accent-2); color: #fff; }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-soft { background: rgba(16, 32, 56, 0.07); color: var(--ink); }
-    .chip-button.is-active { background: var(--ink); color: #fff; }
-
-    .stat-value {
-      margin-top: 10px;
-      font: 800 1.8rem/1 "Sora", sans-serif;
-      letter-spacing: -0.05em;
+    .chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
-
+    .chip {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .content {
+      padding: 14px 16px 32px;
+    }
     .section {
-      margin-top: 18px;
-      scroll-margin-top: 220px;
+      margin-bottom: 18px;
     }
-
     .section-head {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .section-copy,
-    .helper,
-    .support-copy,
-    .meta,
-    .footer,
-    .empty-state,
-    .field-hint {
-      color: var(--muted);
-    }
-
-    .search-input,
-    .search-select,
-    .field-input,
-    .field-note {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 13px 14px;
-      background: rgba(255, 255, 255, 0.85);
-      color: var(--ink);
-    }
-
-    .field-note { min-height: 86px; resize: vertical; }
-
-    .search-results,
-    .timeline-list,
-    .watch-list,
-    .tournament-list,
-    .source-list {
-      display: grid;
+      align-items: center;
       gap: 12px;
+      margin-bottom: 10px;
     }
-
-    .result-card,
-    .match-card,
-    .watch-item,
-    .source-line {
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid rgba(16, 32, 56, 0.08);
+    .section-head h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: .86rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .next-card {
       padding: 14px;
     }
-
-    .result-top,
-    .timeline-top,
-    .watch-top,
-    .player-top,
-    .tournament-top,
-    .match-topline {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .result-title,
-    .watch-title,
-    .player-name,
-    .tournament-title {
-      margin: 10px 0 6px;
-      font: 700 1.05rem/1.2 "Sora", sans-serif;
-    }
-
-    .match-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .match-card {
-      display: grid;
-      gap: 12px;
-      border-left: 5px solid rgba(13, 93, 86, 0.18);
-    }
-
-    .match-card.is-saved { border-left-color: var(--accent); }
-
-    .match-main {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .match-time {
-      min-width: 58px;
+    .next-title {
       font-weight: 700;
-      color: var(--accent-2);
+      font-size: 1rem;
+      margin-bottom: 6px;
     }
-
-    .match-name { font-weight: 600; }
-    .match-copy { flex: 1; }
-
-    .planner-grid {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .planner-actions {
+    .pill-row {
       display: flex;
       flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill {
+      background: #fff7ed;
+      color: var(--accent-dark);
+      border: 1px solid #fed7aa;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .list {
+      display: grid;
       gap: 10px;
+    }
+    .event-card {
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color .15s ease, transform .15s ease;
+    }
+    .event-card:hover {
+      border-color: #fdba74;
+      transform: translateY(-1px);
+    }
+    .event-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .event-title {
+      font-weight: 700;
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+    .event-sub {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .badge {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: #fff7ed;
+      color: var(--accent-dark);
+      padding: 6px 10px;
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17,24,39,.54);
+      display: none;
+      z-index: 40;
+    }
+    .overlay.open {
+      display: block;
+    }
+    .drawer {
+      position: absolute;
+      inset: auto 0 0 0;
+      max-height: 88vh;
+      background: var(--bg);
+      border-radius: 18px 18px 0 0;
+      overflow: auto;
+      box-shadow: 0 -10px 30px rgba(0,0,0,.18);
+    }
+    .drawer-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+    .drawer-actions {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
     }
-
-    .mini-btn {
+    .close-btn {
       border: 0;
-      border-radius: 12px;
+      background: var(--surface-2);
+      border-radius: 10px;
       padding: 10px 12px;
-      background: rgba(16, 32, 56, 0.08);
-      color: var(--ink);
-    }
-
-    .mini-btn.is-saved { background: var(--accent); color: #fff; }
-    .mini-btn.is-reset { background: rgba(171, 47, 47, 0.1); color: var(--danger); }
-
-    .note-preview {
-      margin-top: 6px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(13, 93, 86, 0.08);
-      color: var(--ink);
-      font-size: 0.94rem;
-      line-height: 1.45;
-    }
-
-    .tournament-card details summary {
-      list-style: none;
       cursor: pointer;
     }
-
-    .tournament-card details summary::-webkit-details-marker { display: none; }
-
-    .rank-pill {
-      display: inline-flex;
+    .drawer-title {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .drawer-body {
+      padding: 14px 16px 24px;
+    }
+    .session-card {
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .session-head {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      min-width: 38px;
-      min-height: 38px;
-      border-radius: 50%;
-      background: rgba(16, 32, 56, 0.08);
-      font: 700 0.95rem/1 "Sora", sans-serif;
+      gap: 12px;
+      margin-bottom: 10px;
     }
-
-    .table-wrap {
+    .session-title {
+      margin: 0;
+      font-size: .98rem;
+      font-weight: 700;
+    }
+    .match-list {
+      display: grid;
+      gap: 8px;
+    }
+    .match-item {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .match-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+    .match-time {
+      color: var(--accent-dark);
+      font-weight: 700;
+      font-size: .9rem;
+    }
+    .match-text {
+      font-size: .94rem;
+    }
+    .mini-note {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    .standings-table-wrap {
       overflow-x: auto;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: var(--panel-strong);
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 640px;
-      font-size: 0.92rem;
+      min-width: 620px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
     }
-
     th, td {
-      padding: 12px 10px;
+      padding: 11px 10px;
       text-align: left;
       border-bottom: 1px solid var(--line);
+      font-size: .9rem;
     }
-
     th {
-      font: 700 0.74rem/1 "Sora", sans-serif;
+      background: #fff7ed;
+      color: var(--accent-dark);
+      font-size: .78rem;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--muted);
-      background: rgba(16, 32, 56, 0.05);
+      letter-spacing: .04em;
     }
-
-    .footer {
-      margin: 22px 0 10px;
-      text-align: center;
-      font-size: 0.86rem;
-    }
-
-    .stagger {
-      opacity: 0;
-      transform: translateY(14px);
-      animation: rise 420ms ease forwards;
-    }
-
-    .stagger:nth-child(2) { animation-delay: 60ms; }
-    .stagger:nth-child(3) { animation-delay: 120ms; }
-    .stagger:nth-child(4) { animation-delay: 180ms; }
-
-    @keyframes rise {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 980px) {
-      .hero-grid,
-      .search-layout,
-      .grid-two,
-      .players-grid { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    @media (max-width: 760px) {
-      .app-shell { width: min(100vw - 12px, 1200px); }
-      .hero { padding: 14px; }
-      .planner-grid { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .section-head { align-items: flex-start; flex-direction: column; }
-    }
-
-    @media (max-width: 560px) {
-      .stats-grid { grid-template-columns: 1fr; }
-      .match-main { flex-direction: column; }
+    @media (max-width: 640px) {
+      .content, .toolbar, .topbar, .drawer-head, .drawer-body { padding-left: 12px; padding-right: 12px; }
+      .event-top, .session-head { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="hero">
-      <div class="eyebrow">PDC darts · telefoonvriendelijke planner</div>
-      <h1>Darts Planner</h1>
-      <p class="subtitle">Een zelfstandige darts-app voor je telefoon: toernooien, spelers en vooral een bruikbaar kijkoverzicht. Zoek op speler, board of kanaal en bouw je eigen schema voor Players Championships, majors en Premier League-avonden.</p>
-      <div class="hero-grid">
-        <section class="feature-card stagger">
-          <div class="chip">Eerstvolgend event</div>
-          <div id="next-event"></div>
-          <div class="hero-actions" style="margin-top: 14px;">
-            <button class="btn btn-accent" id="install-btn" hidden>Installeer app</button>
-            <button class="btn btn-soft" id="jump-search">Zoeken in schema</button>
-            <button class="btn btn-soft" id="jump-watch">Mijn kijkplan</button>
-          </div>
-        </section>
-        <section class="panel stagger">
-          <div class="section-head" style="margin-bottom: 10px;">
-            <div>
-              <h2>Waarom dit werkt</h2>
-              <div class="section-copy">Je krijgt niet alleen een lijst met events, maar ook een persoonlijke plannerlaag bovenop de kalender.</div>
-            </div>
-          </div>
-          <div class="source-list">
-            <div class="source-line">Zoek op speler, toernooi, board, kanaal of eigen notitie.</div>
-            <div class="source-line">Bewaar wedstrijden in je kijkplan met lokale opslag op je telefoon.</div>
-            <div class="source-line">Voeg zelf board- en kanaallabels toe zodra de streams bekend zijn.</div>
-          </div>
-        </section>
-      </div>
-      <div class="stats-grid" id="stats-grid"></div>
-      <nav class="nav-pills">
-        <a class="pill-link" href="#zoeken">Zoeken</a>
-        <a class="pill-link" href="#kijkplan">Kijkplan</a>
-        <a class="pill-link" href="#kalender">Kalender</a>
-        <a class="pill-link" href="#spelers">Spelers</a>
-        <a class="pill-link" href="#standen">Standen</a>
-        <a class="pill-link" href="#bronnen">Bronnen</a>
-      </nav>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-title">Darts</div>
+      <div class="topbar-sub">PDC toernooien, schema's en Premier League</div>
     </header>
 
-    <main>
-      <section class="section" id="zoeken">
-        <div class="search-layout">
-          <article class="search-card stagger">
-            <div class="section-head">
-              <div>
-                <h2>Zoeken in schema</h2>
-                <div class="section-copy">Typ bijvoorbeeld een speler, `board 3`, `viaplay`, `premier league` of een plaatsnaam.</div>
-              </div>
-              <span class="tiny-label" id="search-count"></span>
-            </div>
-            <div class="filter-row">
-              <input class="search-input" id="search-input" type="search" placeholder="Zoek speler, kanaal, board, event of notitie">
-              <select class="search-select" id="series-filter"></select>
-            </div>
-            <div class="search-toolbar" style="margin-top: 12px;">
-              <button class="chip-button is-active" data-filter-mode="all">Alles</button>
-              <button class="chip-button" data-filter-mode="planned">Alleen kijkplan</button>
-              <button class="chip-button" data-filter-mode="customized">Met board/kanaal</button>
-            </div>
-          </article>
-          <article class="notice stagger">
-            <h2 style="margin-bottom: 8px;">Planner voor Players Championships</h2>
-            <div class="section-copy">Als PDC vijf losse streams of boards gebruikt, vul je per wedstrijd zelf `Board` en `Kanaal` in. Daarna kun je meteen zoeken op speler of board en zo je eigen terugkijk- of live-kijkschema maken.</div>
-            <div class="watch-actions" style="margin-top: 14px;">
-              <button class="btn btn-soft" id="clear-planner">Wis plannerlabels</button>
-              <button class="btn btn-soft" id="clear-watchlist">Leeg kijkplan</button>
-            </div>
-          </article>
+    <div class="toolbar">
+      <input id="search-input" class="search" type="search" placeholder="Zoek toernooi, plaats of serie">
+      <div id="series-chips" class="chips"></div>
+    </div>
+
+    <main class="content">
+      <section class="section">
+        <div class="section-head">
+          <h2>Eerstvolgend</h2>
+          <div id="updated-label" class="meta"></div>
         </div>
-        <div class="search-results" id="search-results" style="margin-top: 14px;"></div>
+        <div id="next-event" class="card next-card"></div>
       </section>
 
-      <section class="section" id="kijkplan">
-        <article class="panel stagger">
-          <div class="section-head">
-            <div>
-              <h2>Mijn kijkplan</h2>
-              <div class="section-copy">Hier staan de wedstrijden en sessies die je hebt gemarkeerd. Alles blijft lokaal op het toestel bewaard.</div>
-            </div>
-            <span class="chip" id="watch-count"></span>
-          </div>
-          <div class="watch-list" id="watch-list"></div>
-        </article>
-      </section>
-
-      <section class="section" id="vandaag">
-        <div class="grid-two">
-          <article class="panel stagger">
-            <div class="section-head">
-              <div>
-                <h2>Nu & straks</h2>
-                <div class="section-copy">De eerstvolgende sessies en speelmomenten vanaf vandaag.</div>
-              </div>
-              <span class="tiny-label" id="updated-chip"></span>
-            </div>
-            <div class="timeline-list" id="timeline-list"></div>
-          </article>
-          <article class="panel stagger">
-            <div class="section-head">
-              <div>
-                <h2>Snelle focus</h2>
-                <div class="section-copy">Handig als je vooral door grote blokken wilt bladeren.</div>
-              </div>
-            </div>
-            <div class="watch-grid" id="focus-grid"></div>
-          </article>
+      <section class="section">
+        <div class="section-head">
+          <h2>Komende sessies</h2>
+          <div id="session-count" class="meta"></div>
         </div>
+        <div id="upcoming-list" class="list"></div>
       </section>
 
-      <section class="section" id="kalender">
-        <article class="panel stagger">
-          <div class="section-head">
-            <div>
-              <h2>Toernooikalender</h2>
-              <div class="section-copy">Alle events gegroepeerd per toernooi, zodat je sneller door het jaar kunt bewegen.</div>
-            </div>
-            <span class="tiny-label" id="tournament-count"></span>
-          </div>
-          <div class="tournament-list" id="tournament-list"></div>
-        </article>
+      <section class="section">
+        <div class="section-head">
+          <h2>Toernooien</h2>
+          <div id="tournament-count" class="meta"></div>
+        </div>
+        <div id="tournament-list" class="list"></div>
       </section>
 
-      <section class="section" id="spelers">
-        <article class="panel stagger">
-          <div class="section-head">
-            <div>
-              <h2>Officiële PDC-spelerssnapshot</h2>
-              <div class="section-copy">Topspelers en rankinggegevens uit de openbare PDC participants-feed.</div>
-            </div>
-            <span class="chip" id="player-count"></span>
-          </div>
-          <div class="players-grid" id="players-grid"></div>
-        </article>
-      </section>
-
-      <section class="section" id="standen">
-        <article class="panel stagger">
-          <div class="section-head">
-            <div>
-              <h2>Premier League-stand</h2>
-              <div class="section-copy">Snapshot-stand voor snel overzicht in dezelfde app.</div>
-            </div>
-            <span class="tiny-label">Snapshot</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Pos</th><th>Speler</th><th>Gespeeld</th><th>Halve</th><th>Finales</th><th>Avondwinst</th><th>Punten</th></tr>
-              </thead>
-              <tbody id="standings-body"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
-      <section class="section" id="bronnen">
-        <div class="grid-two">
-          <article class="source-card stagger">
-            <div class="section-head">
-              <div>
-                <h2>Bronnen</h2>
-                <div class="section-copy">Transparant over wat automatisch is en wat je zelf in de planner aanvult.</div>
-              </div>
-            </div>
-            <div class="source-list" id="source-list"></div>
-          </article>
-          <article class="notice stagger">
-            <h2 style="margin-bottom: 8px;">Belangrijke nuance</h2>
-            <div class="section-copy">PDC publiceert publiek niet overal nette kanaal- en boardtoewijzingen voor een statische externe app. Daarom is de kern van deze versie: sterke planning, snelle zoekfunctie en officiële spelersbasis, zonder afhankelijk te zijn van je oude projectmap.</div>
-          </article>
+      <section class="section">
+        <div class="section-head">
+          <h2>Premier League Stand</h2>
+          <div class="meta">Snapshot</div>
+        </div>
+        <div class="standings-table-wrap">
+          <table>
+            <thead>
+              <tr><th>Pos</th><th>Speler</th><th>Gespeeld</th><th>Halve</th><th>Finales</th><th>Winst</th><th>Punten</th></tr>
+            </thead>
+            <tbody id="standings-body"></tbody>
+          </table>
         </div>
       </section>
     </main>
+  </div>
 
-    <footer class="footer">Darts Planner · PWA voor GitHub Pages · lokale plannerdata blijft op je toestel staan</footer>
+  <div id="detail-overlay" class="overlay" aria-hidden="true">
+    <div class="drawer">
+      <div class="drawer-head">
+        <div class="drawer-actions">
+          <button id="close-detail" class="close-btn" type="button">Sluiten</button>
+          <div id="detail-series" class="badge"></div>
+        </div>
+        <h2 id="detail-title" class="drawer-title"></h2>
+        <div id="detail-meta" class="meta"></div>
+      </div>
+      <div id="detail-body" class="drawer-body"></div>
+    </div>
   </div>
 
   <script src="data.js"></script>
