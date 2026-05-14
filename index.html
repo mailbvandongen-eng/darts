@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111827">
-  <meta name="description" content="Darts: PDC kalender per datum, schema's en toernooi-info.">
-  <title>Darts</title>
+  <meta name="description" content="PDC Darts: kalender per datum, schema's, spelers en toernooi-info.">
+  <title>PDC Darts</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
@@ -20,7 +20,7 @@
       --accent: #ea580c;
       --accent-soft: #fff7ed;
       --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
-      --radius: 14px;
+      --radius: 8px;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -78,6 +78,9 @@
       border-radius: 999px;
       padding: 8px 12px;
       cursor: pointer;
+      min-height: 36px;
+      font-weight: 700;
+      white-space: nowrap;
     }
     .chip.active,
     .date-tab.active {
@@ -114,6 +117,7 @@
     }
     .summary-card {
       padding: 14px;
+      min-height: 112px;
     }
     .summary-label {
       color: var(--muted);
@@ -136,6 +140,15 @@
     .section-head h2 {
       margin: 0;
       font-size: 1rem;
+    }
+    .section-head .meta {
+      min-width: 0;
+      max-width: 58%;
+      margin-left: auto;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .meta { color: var(--muted); font-size: .86rem; }
     .day-list { display: grid; gap: 14px; }
@@ -173,8 +186,9 @@
       color: #c2410c;
       border: 1px solid #fed7aa;
       padding: 5px 9px;
-      font-size: .74rem;
+      font-size: .72rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .event-list { display: grid; }
     .event-row {
@@ -210,7 +224,7 @@
     }
     .info-card {
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: var(--radius);
       background: var(--surface);
       padding: 10px 12px;
     }
@@ -258,7 +272,17 @@
     }
     @media (max-width: 720px) {
       .summary-grid { grid-template-columns: 1fr; }
-      .date-strip { top: 154px; }
+      .date-strip { top: 203px; }
+      .section-head {
+        display: grid;
+        gap: 4px;
+        justify-content: stretch;
+      }
+      .section-head .meta {
+        max-width: 100%;
+        margin-left: 0;
+        text-align: left;
+      }
       .event-main { grid-template-columns: 58px 1fr auto; }
       .info-grid { grid-template-columns: 1fr; }
     }
@@ -268,11 +292,11 @@
   <div class="app">
     <header class="header">
       <div class="header-main">
-        <div class="title">Darts</div>
-        <div class="subtitle">Lijst per datum, klikbare sessies en toernooi-info</div>
+        <div class="title">PDC Darts</div>
+        <div class="subtitle">3 dagen terug, 3 weken vooruit</div>
       </div>
       <div class="toolbar">
-        <input id="search-input" class="search" type="search" placeholder="Zoek toernooi, locatie of serie">
+        <input id="search-input" class="search" type="search" placeholder="Zoek speler, partij, toernooi of locatie">
         <div id="series-row" class="series-row"></div>
       </div>
     </header>

@@ -4,15 +4,22 @@ const playersData = dartsData.dartsPlayers;
 const standingsData = dartsData.plDartsStandings;
 const calendarData = dartsData.dartsCalendar;
 
+const WINDOW_DAYS_BACK = 3;
+const WINDOW_DAYS_FORWARD = 21;
+
 const state = {
   query: '',
   series: 'all'
 };
 
+let scrollObserver = null;
+
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
-const playerMap = Object.fromEntries(Object.entries(playersData).map(([key, value]) => [key, value.name]));
+const playerMap = Object.fromEntries(
+  Object.entries(playersData).map(([key, value]) => [key, value.name])
+);
 
 function normalizeEventName(name) {
   return name.replace(' - Finale', '').replace(' - Play-Offs', '').trim();
@@ -28,7 +35,11 @@ function seriesFor(name) {
 }
 
 function formatDate(dateString) {
-  return new Date(`${dateString}T12:00:00`).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+  return new Date(`${dateString}T12:00:00`).toLocaleDateString('nl-NL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  });
 }
 
 function formatShortDate(dateString) {
@@ -38,11 +49,42 @@ function formatShortDate(dateString) {
   return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
 }
 
+function formatDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getTodayString() {
+  return formatDateKey(today);
+}
+
+function isToday(dateString) {
+  return dateString === getTodayString();
+}
+
 function formatMatch(match) {
   if (match.label) return match.label;
   const home = playerMap[match.home] || match.home || 'TBD';
   const away = playerMap[match.away] || match.away || '';
   return away ? `${home} vs ${away}` : home;
+}
+
+function searchableEventText(event) {
+  const matchText = event.matches.map((match) => {
+    const home = playerMap[match.home] || match.home || '';
+    const away = playerMap[match.away] || match.away || '';
+    return `${match.time} ${match.label || ''} ${home} ${away}`;
+  }).join(' ');
+
+  return `${event.title} ${event.location} ${event.series} ${event.channel} ${matchText}`.toLowerCase();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 const parsedEvents = calendarData.map((event, index) => ({
@@ -54,22 +96,36 @@ const parsedEvents = calendarData.map((event, index) => ({
   dateObj: new Date(`${event.date}T${event.time || '00:00'}:00`)
 })).sort((a, b) => a.dateObj - b.dateObj);
 
-const groupedByDate = Object.entries(parsedEvents.reduce((acc, event) => {
+const groupedByDateMap = parsedEvents.reduce((acc, event) => {
   if (!acc[event.date]) acc[event.date] = [];
   acc[event.date].push(event);
   return acc;
-}, {})).map(([date, events]) => ({ date, events }));
+}, {});
+
+function createWindowDays() {
+  const days = [];
+  for (let offset = -WINDOW_DAYS_BACK; offset <= WINDOW_DAYS_FORWARD; offset += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    const key = formatDateKey(date);
+    days.push({ date: key, events: groupedByDateMap[key] || [] });
+  }
+  return days;
+}
 
 function filteredDays() {
   const query = state.query.trim().toLowerCase();
-  return groupedByDate.map((group) => {
+  const days = createWindowDays().map((group) => {
     const events = group.events.filter((event) => {
       if (state.series !== 'all' && event.series !== state.series) return false;
       if (!query) return true;
-      return `${event.title} ${event.location} ${event.series} ${event.channel}`.toLowerCase().includes(query);
+      return searchableEventText(event).includes(query);
     });
     return { ...group, events };
-  }).filter((group) => group.events.length > 0);
+  });
+
+  if (!query && state.series === 'all') return days;
+  return days.filter((group) => group.events.length > 0);
 }
 
 function renderSeriesRow() {
@@ -89,50 +145,49 @@ function renderSeriesRow() {
 
 function renderDateTabs(days) {
   const container = document.getElementById('date-tabs');
+  const todayString = getTodayString();
   container.innerHTML = days.map((group) => `
-    <button class="date-tab${group.date === currentAnchorDate(days) ? ' active' : ''}" data-date="${group.date}" type="button">${labelForTab(group.date)}</button>
+    <button class="date-tab${group.date === todayString ? ' active' : ''}" data-date="${group.date}" type="button">${isToday(group.date) ? 'VANDAAG' : formatShortDate(group.date)}</button>
   `).join('');
 
   container.querySelectorAll('[data-date]').forEach((button) => {
     button.addEventListener('click', () => scrollToDate(button.dataset.date));
   });
-}
 
-function labelForTab(dateString) {
-  return isToday(dateString) ? 'VANDAAG' : formatShortDate(dateString);
-}
-
-function currentAnchorDate(days) {
-  const todayString = getTodayString();
-  return days.find((group) => group.date >= todayString)?.date || days[0]?.date || todayString;
+  const activeButton = container.querySelector('.date-tab.active');
+  if (activeButton) {
+    container.scrollLeft = activeButton.offsetLeft - ((container.clientWidth - activeButton.clientWidth) / 2);
+  }
 }
 
 function renderSummary(days) {
-  const upcoming = parsedEvents.filter((event) => event.dateObj >= today);
-  const nextEvent = upcoming[0] || parsedEvents[parsedEvents.length - 1];
-  const tournaments = new Set(parsedEvents.map((event) => event.baseEvent));
+  const visibleEvents = days.flatMap((group) => group.events);
+  const nextEvent = visibleEvents.find((event) => event.dateObj >= today) || parsedEvents.find((event) => event.dateObj >= today) || parsedEvents[parsedEvents.length - 1];
+  const tournaments = new Set(visibleEvents.map((event) => event.baseEvent));
+
   document.getElementById('summary-grid').innerHTML = `
+    <article class="summary-card">
+      <div class="summary-label">Vandaag</div>
+      <div class="summary-value">${days.find((group) => group.date === getTodayString())?.events.length || 0}</div>
+      <div class="meta">event(s) op ${formatDate(getTodayString())}</div>
+    </article>
     <article class="summary-card">
       <div class="summary-label">Eerstvolgende sessie</div>
       <div class="summary-value">${escapeHtml(nextEvent.time)}</div>
       <div class="meta">${escapeHtml(nextEvent.title)} · ${formatDate(nextEvent.date)}</div>
     </article>
     <article class="summary-card">
-      <div class="summary-label">Sessies</div>
-      <div class="summary-value">${parsedEvents.length}</div>
-      <div class="meta">Bijgewerkt ${updatedAt}</div>
-    </article>
-    <article class="summary-card">
-      <div class="summary-label">Toernooien</div>
-      <div class="summary-value">${tournaments.size}</div>
-      <div class="meta">${days.length} dagen zichtbaar</div>
+      <div class="summary-label">Venster</div>
+      <div class="summary-value">${visibleEvents.length}</div>
+      <div class="meta">${WINDOW_DAYS_BACK} dagen terug · 3 weken vooruit · update ${updatedAt}</div>
     </article>
   `;
 }
 
 function renderCalendar() {
   const days = filteredDays();
-  document.getElementById('calendar-meta').textContent = `${days.length} dagen · ${days.reduce((sum, group) => sum + group.events.length, 0)} events`;
+  const totalVisibleEvents = days.reduce((sum, group) => sum + group.events.length, 0);
+  document.getElementById('calendar-meta').textContent = `${days.length} d · ${totalVisibleEvents} evt`;
   renderDateTabs(days);
 
   const container = document.getElementById('day-list');
@@ -150,7 +205,6 @@ function renderCalendar() {
 
     const competitions = Object.entries(competitionMap).map(([name, events]) => ({
       name,
-      channel: events[0].channel,
       series: events[0].series,
       events
     }));
@@ -161,54 +215,56 @@ function renderCalendar() {
           <div class="day-title">${isToday(group.date) ? 'Vandaag' : escapeHtml(formatDate(group.date))}</div>
           <div class="meta">${group.events.length} event(s)</div>
         </div>
-        <div class="competition-list">
-          ${competitions.map((competition, competitionIndex) => `
-            <article class="competition-block">
-              <div class="competition-head">
-                <div class="competition-name">${escapeHtml(competition.name)}</div>
-                <div class="badge">${escapeHtml(competition.series)}</div>
-              </div>
-              <div class="event-list">
-                ${competition.events.map((event, eventIndex) => {
-                  const detailId = `detail-${group.date}-${competitionIndex}-${eventIndex}`;
-                  return `
-                    <div>
-                      <div class="event-row" data-toggle="${detailId}">
-                        <div class="event-main">
-                          <div class="time">${escapeHtml(event.time)}</div>
-                          <div>
-                            <div class="event-title">${escapeHtml(event.title)}</div>
-                            <div class="event-sub">${escapeHtml(event.location)} · ${escapeHtml(event.channel)}</div>
-                          </div>
-                          <div class="expand">Open</div>
-                        </div>
-                      </div>
-                      <div class="event-details" id="${detailId}">
-                        <div class="info-grid">
-                          <div class="info-card"><div class="info-label">Toernooi</div><div class="info-value">${escapeHtml(event.baseEvent)}</div></div>
-                          <div class="info-card"><div class="info-label">Serie</div><div class="info-value">${escapeHtml(event.series)}</div></div>
-                          <div class="info-card"><div class="info-label">Locatie</div><div class="info-value">${escapeHtml(event.location)}</div></div>
-                          <div class="info-card"><div class="info-label">Kanaal</div><div class="info-value">${escapeHtml(event.channel)}</div></div>
-                        </div>
-                        <div class="match-list">
-                          ${event.matches.map((match) => `
-                            <div class="match-item">
-                              <div class="match-time">${escapeHtml(match.time)}</div>
-                              <div>
-                                <div class="match-text">${escapeHtml(formatMatch(match))}</div>
-                                ${match.label ? '<div class="match-note">Exacte partijen volgen zodra loting of order of play bekend is.</div>' : ''}
-                              </div>
+        ${competitions.length ? `
+          <div class="competition-list">
+            ${competitions.map((competition, competitionIndex) => `
+              <article class="competition-block">
+                <div class="competition-head">
+                  <div class="competition-name">${escapeHtml(competition.name)}</div>
+                  <div class="badge">${escapeHtml(competition.series)}</div>
+                </div>
+                <div class="event-list">
+                  ${competition.events.map((event, eventIndex) => {
+                    const detailId = `detail-${group.date}-${competitionIndex}-${eventIndex}`;
+                    return `
+                      <div>
+                        <div class="event-row" data-toggle="${detailId}">
+                          <div class="event-main">
+                            <div class="time">${escapeHtml(event.time)}</div>
+                            <div>
+                              <div class="event-title">${escapeHtml(event.title)}</div>
+                              <div class="event-sub">${escapeHtml(event.location)} · ${escapeHtml(event.channel)}</div>
                             </div>
-                          `).join('')}
+                            <div class="expand">Open</div>
+                          </div>
+                        </div>
+                        <div class="event-details" id="${detailId}">
+                          <div class="info-grid">
+                            <div class="info-card"><div class="info-label">Toernooi</div><div class="info-value">${escapeHtml(event.baseEvent)}</div></div>
+                            <div class="info-card"><div class="info-label">Serie</div><div class="info-value">${escapeHtml(event.series)}</div></div>
+                            <div class="info-card"><div class="info-label">Locatie</div><div class="info-value">${escapeHtml(event.location)}</div></div>
+                            <div class="info-card"><div class="info-label">Kanaal</div><div class="info-value">${escapeHtml(event.channel)}</div></div>
+                          </div>
+                          <div class="match-list">
+                            ${event.matches.map((match) => `
+                              <div class="match-item">
+                                <div class="match-time">${escapeHtml(match.time)}</div>
+                                <div>
+                                  <div class="match-text">${escapeHtml(formatMatch(match))}</div>
+                                  ${match.label ? '<div class="match-note">Exacte partijen volgen zodra loting of order of play bekend is.</div>' : ''}
+                                </div>
+                              </div>
+                            `).join('')}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </article>
-          `).join('')}
-        </div>
+                    `;
+                  }).join('')}
+                </div>
+              </article>
+            `).join('')}
+          </div>
+        ` : '<div class="empty-state">Geen darts op deze dag.</div>'}
       </section>
     `;
   }).join('');
@@ -265,7 +321,9 @@ function setupScrollSync() {
   const tabs = document.querySelectorAll('.date-tab[data-date]');
   if (!sections.length || !tabs.length) return;
 
-  const observer = new IntersectionObserver((entries) => {
+  if (scrollObserver) scrollObserver.disconnect();
+
+  scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
       const date = entry.target.dataset.date;
@@ -273,24 +331,7 @@ function setupScrollSync() {
     });
   }, { rootMargin: '-220px 0px -60% 0px', threshold: 0.05 });
 
-  sections.forEach((section) => observer.observe(section));
-}
-
-function isToday(dateString) {
-  return dateString === getTodayString();
-}
-
-function getTodayString() {
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  sections.forEach((section) => scrollObserver.observe(section));
 }
 
 document.getElementById('search-input').addEventListener('input', (event) => {
