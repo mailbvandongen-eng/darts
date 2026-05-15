@@ -1,4 +1,4 @@
-const CACHE_NAME = 'darts-planner-v4';
+const CACHE_NAME = 'darts-planner-v5';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './data.js', './app.js'];
 
 self.addEventListener('install', (event) => {

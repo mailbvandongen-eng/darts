@@ -1,21 +1,58 @@
-const dartsData = window.DARTS_DATA;
-const updatedAt = dartsData.lastUpdated;
-const playersData = dartsData.dartsPlayers;
-const standingsData = dartsData.plDartsStandings;
-const calendarData = dartsData.dartsCalendar;
-
+const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
-const THEME_STORAGE_KEY = 'darts-theme-v1';
+
+const state = {
+  isRefreshing: false
+};
 
 let scrollObserver = null;
+let dartsData = normalizeData(window.DARTS_DATA);
+let updatedAt = '';
+let playersData = {};
+let sourceMeta = {};
+let playerMap = {};
+let parsedEvents = [];
+let groupedByDateMap = {};
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
-const playerMap = Object.fromEntries(
-  Object.entries(playersData).map(([key, value]) => [key, value.name])
-);
+applyData(dartsData);
+
+function normalizeData(data) {
+  return {
+    lastUpdated: data?.lastUpdated || '',
+    dartsPlayers: data?.dartsPlayers || {},
+    plDartsStandings: data?.plDartsStandings || [],
+    dartsCalendar: data?.dartsCalendar || [],
+    sourceMeta: data?.sourceMeta || {}
+  };
+}
+
+function applyData(data) {
+  dartsData = normalizeData(data);
+  updatedAt = dartsData.lastUpdated;
+  playersData = dartsData.dartsPlayers;
+  sourceMeta = dartsData.sourceMeta;
+  playerMap = Object.fromEntries(
+    Object.entries(playersData).map(([key, value]) => [key, value.name])
+  );
+  parsedEvents = dartsData.dartsCalendar.map((event, index) => ({
+    ...event,
+    id: `${event.date}|${event.time}|${event.event}|${index}`,
+    title: event.event,
+    baseEvent: normalizeEventName(event.event),
+    series: seriesFor(event.event),
+    dateObj: new Date(`${event.date}T${event.time || '00:00'}:00`)
+  })).sort((a, b) => a.dateObj - b.dateObj);
+
+  groupedByDateMap = parsedEvents.reduce((acc, event) => {
+    if (!acc[event.date]) acc[event.date] = [];
+    acc[event.date].push(event);
+    return acc;
+  }, {});
+}
 
 function normalizeEventName(name) {
   return name.replace(' - Finale', '').replace(' - Play-Offs', '').trim();
@@ -70,16 +107,6 @@ function formatMatch(match) {
   return away ? `${home} vs ${away}` : home;
 }
 
-function searchableEventText(event) {
-  const matchText = event.matches.map((match) => {
-    const home = playerMap[match.home] || match.home || '';
-    const away = playerMap[match.away] || match.away || '';
-    return `${match.time} ${match.label || ''} ${home} ${away}`;
-  }).join(' ');
-
-  return `${event.title} ${event.location} ${event.series} ${event.channel} ${matchText}`.toLowerCase();
-}
-
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -99,25 +126,10 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   const button = document.getElementById('theme-toggle');
-  if (button) button.textContent = theme === 'dark' ? 'Licht thema' : 'Donker thema';
+  if (button) button.textContent = theme === 'dark' ? 'Licht' : 'Donker';
   const themeColor = document.querySelector('meta[name="theme-color"]');
   if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#050b16' : '#111827');
 }
-
-const parsedEvents = calendarData.map((event, index) => ({
-  ...event,
-  id: `${event.date}|${event.time}|${event.event}|${event.location}|${index}`,
-  title: event.event,
-  baseEvent: normalizeEventName(event.event),
-  series: seriesFor(event.event),
-  dateObj: new Date(`${event.date}T${event.time || '00:00'}:00`)
-})).sort((a, b) => a.dateObj - b.dateObj);
-
-const groupedByDateMap = parsedEvents.reduce((acc, event) => {
-  if (!acc[event.date]) acc[event.date] = [];
-  acc[event.date].push(event);
-  return acc;
-}, {});
 
 function createWindowDays() {
   const days = [];
@@ -129,18 +141,23 @@ function createWindowDays() {
   return days;
 }
 
+function emptyStateCopy(dateString) {
+  const yesterdayString = formatDateKey(offsetDate(today, -1));
+  const tomorrowString = formatDateKey(offsetDate(today, 1));
+  if (dateString === yesterdayString) return 'Geen wedstrijden gisteren';
+  if (dateString === getTodayString()) return 'Geen wedstrijden vandaag';
+  if (dateString === tomorrowString) return 'Geen wedstrijden morgen';
+  return 'Geen wedstrijden';
+}
+
 function renderToolbarActions() {
-  const activeDate = formatDateKey(today);
+  const currentSection = document.querySelector('.date-tab.active')?.dataset.date || getTodayString();
   const yesterdayDate = formatDateKey(offsetDate(today, -1));
   const tomorrowDate = formatDateKey(offsetDate(today, 1));
-  const currentSection = document.querySelector('.date-tab.active')?.dataset.date || activeDate;
-  const yesterdayButton = document.getElementById('yesterday-btn');
-  const todayButton = document.getElementById('today-btn');
-  const tomorrowButton = document.getElementById('tomorrow-btn');
-
-  if (yesterdayButton) yesterdayButton.classList.toggle('active', currentSection === yesterdayDate);
-  if (todayButton) todayButton.classList.toggle('active', currentSection === activeDate);
-  if (tomorrowButton) tomorrowButton.classList.toggle('active', currentSection === tomorrowDate);
+  document.getElementById('yesterday-btn').classList.toggle('active', currentSection === yesterdayDate);
+  document.getElementById('today-btn').classList.toggle('active', currentSection === getTodayString());
+  document.getElementById('tomorrow-btn').classList.toggle('active', currentSection === tomorrowDate);
+  document.getElementById('refresh-btn').textContent = state.isRefreshing ? 'Verversen...' : 'Ververs';
 }
 
 function renderDateTabs(days) {
@@ -161,41 +178,21 @@ function renderDateTabs(days) {
 }
 
 function renderSummary(days) {
-  const visibleEvents = days.flatMap((group) => group.events);
-  const nextEvent = visibleEvents.find((event) => event.dateObj >= today) || parsedEvents.find((event) => event.dateObj >= today) || parsedEvents[parsedEvents.length - 1];
   const yesterdayKey = formatDateKey(offsetDate(today, -1));
   const tomorrowKey = formatDateKey(offsetDate(today, 1));
-  const yesterdayCount = days.find((group) => group.date === yesterdayKey)?.events.length || 0;
-  const todayCount = days.find((group) => group.date === getTodayString())?.events.length || 0;
-  const tomorrowCount = days.find((group) => group.date === tomorrowKey)?.events.length || 0;
+  const cards = [
+    { date: yesterdayKey, label: 'Gisteren', count: days.find((group) => group.date === yesterdayKey)?.events.length || 0, copy: 'Er was darts' },
+    { date: getTodayString(), label: 'Vandaag', count: days.find((group) => group.date === getTodayString())?.events.length || 0, copy: 'Er is darts', highlight: true },
+    { date: tomorrowKey, label: 'Morgen', count: days.find((group) => group.date === tomorrowKey)?.events.length || 0, copy: 'Er is darts' }
+  ];
 
-  document.getElementById('summary-grid').innerHTML = `
-    <article class="summary-card" data-jump-date="${yesterdayKey}">
-      <div class="summary-label">Gisteren</div>
-      <div class="summary-value">${yesterdayCount}</div>
-      <div class="meta">${yesterdayCount ? 'Er was darts' : 'Geen darts'}</div>
+  document.getElementById('summary-grid').innerHTML = cards.map((card) => `
+    <article class="summary-card jumpable${card.highlight ? ' highlight' : ''}" data-jump-date="${card.date}">
+      <div class="summary-label">${card.label}</div>
+      <div class="summary-value">${card.count}</div>
+      <div class="meta">${card.count ? card.copy : emptyStateCopy(card.date)}</div>
     </article>
-    <article class="summary-card highlight" data-jump-date="${getTodayString()}">
-      <div class="summary-label">Vandaag</div>
-      <div class="summary-value">${todayCount}</div>
-      <div class="meta">${todayCount ? 'Er is darts' : 'Geen darts vandaag'}</div>
-    </article>
-    <article class="summary-card" data-jump-date="${tomorrowKey}">
-      <div class="summary-label">Morgen</div>
-      <div class="summary-value">${tomorrowCount}</div>
-      <div class="meta">${tomorrowCount ? 'Er is darts' : 'Nog niets gepland'}</div>
-    </article>
-    <article class="summary-card">
-      <div class="summary-label">Eerstvolgende sessie</div>
-      <div class="summary-value">${escapeHtml(nextEvent.time)}</div>
-      <div class="meta">${escapeHtml(nextEvent.title)} · ${formatDate(nextEvent.date)}</div>
-    </article>
-    <article class="summary-card">
-      <div class="summary-label">Venster</div>
-      <div class="summary-value">${visibleEvents.length}</div>
-      <div class="meta">${WINDOW_DAYS_BACK} dagen terug · 3 weken vooruit · update ${updatedAt}</div>
-    </article>
-  `;
+  `).join('');
 
   document.querySelectorAll('[data-jump-date]').forEach((card) => {
     card.addEventListener('click', () => scrollToDate(card.dataset.jumpDate));
@@ -204,16 +201,10 @@ function renderSummary(days) {
 
 function renderCalendar() {
   const days = createWindowDays();
-  const totalVisibleEvents = days.reduce((sum, group) => sum + group.events.length, 0);
-  document.getElementById('calendar-meta').textContent = `${days.length} d · ${totalVisibleEvents} evt`;
+  document.getElementById('calendar-meta').textContent = `Gecontroleerd: ${updatedAt || sourceMeta?.calendar?.snapshotDate || '-'}`;
   renderDateTabs(days);
 
   const container = document.getElementById('day-list');
-  if (!days.length) {
-    container.innerHTML = '<div class="empty-state">Geen resultaten voor deze filter.</div>';
-    return;
-  }
-
   container.innerHTML = days.map((group) => {
     const competitionMap = group.events.reduce((acc, event) => {
       if (!acc[event.baseEvent]) acc[event.baseEvent] = [];
@@ -231,7 +222,7 @@ function renderCalendar() {
       <section class="day-section" data-date="${group.date}" id="date-${group.date}">
         <div class="day-header">
           <div class="day-title">${isToday(group.date) ? 'Vandaag' : escapeHtml(formatDate(group.date))}</div>
-          <div class="meta">${group.events.length} event(s)</div>
+          <div class="meta">${group.events.length ? `${group.events.length} sessie(s)` : emptyStateCopy(group.date)}</div>
         </div>
         ${competitions.length ? `
           <div class="competition-list">
@@ -259,17 +250,17 @@ function renderCalendar() {
                         <div class="event-details" id="${detailId}">
                           <div class="info-grid">
                             <div class="info-card"><div class="info-label">Toernooi</div><div class="info-value">${escapeHtml(event.baseEvent)}</div></div>
-                            <div class="info-card"><div class="info-label">Serie</div><div class="info-value">${escapeHtml(event.series)}</div></div>
-                            <div class="info-card"><div class="info-label">Locatie</div><div class="info-value">${escapeHtml(event.location)}</div></div>
                             <div class="info-card"><div class="info-label">Kanaal</div><div class="info-value">${escapeHtml(event.channel)}</div></div>
+                            <div class="info-card"><div class="info-label">Locatie</div><div class="info-value">${escapeHtml(event.location)}</div></div>
+                            <div class="info-card"><div class="info-label">Gecontroleerd</div><div class="info-value">${escapeHtml(updatedAt || sourceMeta?.calendar?.snapshotDate || '-')}</div></div>
                           </div>
                           <div class="match-list">
-                            ${event.matches.map((match) => `
+                            ${(event.matches || []).map((match) => `
                               <div class="match-item">
                                 <div class="match-time">${escapeHtml(match.time)}</div>
                                 <div>
                                   <div class="match-text">${escapeHtml(formatMatch(match))}</div>
-                                  ${match.label ? '<div class="match-note">Exacte partijen volgen zodra loting of order of play bekend is.</div>' : ''}
+                                  ${match.label ? '<div class="match-note">Sessie bevestigd. Exacte partijen volgen zodra de order of play bekend is.</div>' : ''}
                                 </div>
                               </div>
                             `).join('')}
@@ -282,7 +273,7 @@ function renderCalendar() {
               </article>
             `).join('')}
           </div>
-        ` : '<div class="empty-state">Geen darts op deze dag.</div>'}
+        ` : `<div class="empty-state">${escapeHtml(emptyStateCopy(group.date))}</div>`}
       </section>
     `;
   }).join('');
@@ -296,6 +287,18 @@ function bindAccordion() {
     row.addEventListener('click', () => {
       const detail = document.getElementById(row.dataset.toggle);
       const isOpen = detail.classList.contains('open');
+
+      document.querySelectorAll('.event-details.open').forEach((openDetail) => {
+        if (openDetail !== detail) openDetail.classList.remove('open');
+      });
+      document.querySelectorAll('.event-row.open').forEach((openRow) => {
+        if (openRow !== row) {
+          openRow.classList.remove('open');
+          const expand = openRow.querySelector('.expand');
+          if (expand) expand.textContent = 'Open';
+        }
+      });
+
       detail.classList.toggle('open', !isOpen);
       row.classList.toggle('open', !isOpen);
       const expand = row.querySelector('.expand');
@@ -304,30 +307,9 @@ function bindAccordion() {
   });
 }
 
-function renderStandings() {
-  document.getElementById('standings-body').innerHTML = standingsData.map((row) => `
-    <tr>
-      <td>${row.pos}</td>
-      <td>${escapeHtml(row.name)}</td>
-      <td>${row.played}</td>
-      <td>${row.sf}</td>
-      <td>${row.f}</td>
-      <td>${row.w}</td>
-      <td><strong>${row.pts}</strong></td>
-    </tr>
-  `).join('');
-}
-
-function syncStickyLayout() {
-  const headerHeight = document.querySelector('.header')?.offsetHeight || 122;
-  const dateStripHeight = document.querySelector('.date-strip')?.offsetHeight || 52;
-  document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
-  document.documentElement.style.setProperty('--date-strip-height', `${dateStripHeight}px`);
-}
-
-function rerenderCalendar() {
-  renderToolbarActions();
+function rerender() {
   const days = createWindowDays();
+  renderToolbarActions();
   renderSummary(days);
   renderCalendar();
   syncStickyLayout();
@@ -364,6 +346,47 @@ function setupScrollSync() {
   sections.forEach((section) => scrollObserver.observe(section));
 }
 
+function syncStickyLayout() {
+  const headerHeight = document.querySelector('.header')?.offsetHeight || 122;
+  const dateStripHeight = document.querySelector('.date-strip')?.offsetHeight || 52;
+  document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
+  document.documentElement.style.setProperty('--date-strip-height', `${dateStripHeight}px`);
+}
+
+function parseFetchedData(scriptText) {
+  const factory = new Function(`
+    "use strict";
+    ${scriptText}
+    return typeof window !== "undefined" && window.DARTS_DATA
+      ? window.DARTS_DATA
+      : { lastUpdated, dartsPlayers, plDartsStandings, dartsCalendar, sourceMeta };
+  `);
+  const nextData = factory();
+  if (!nextData?.dartsCalendar) {
+    throw new Error('Ongeldige dartsdata ontvangen');
+  }
+  return nextData;
+}
+
+async function refreshVerifiedData() {
+  state.isRefreshing = true;
+  renderToolbarActions();
+
+  try {
+    const response = await fetch(`data.js?ts=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const scriptText = await response.text();
+    applyData(parseFetchedData(scriptText));
+    rerender();
+  } catch (error) {
+    console.error('Refresh failed:', error);
+    window.alert('Verversen mislukt. Probeer het opnieuw wanneer de nieuwste geverifieerde data beschikbaar is.');
+  } finally {
+    state.isRefreshing = false;
+    renderToolbarActions();
+  }
+}
+
 document.getElementById('yesterday-btn').addEventListener('click', () => {
   scrollToDate(formatDateKey(offsetDate(today, -1)));
 });
@@ -376,13 +399,14 @@ document.getElementById('tomorrow-btn').addEventListener('click', () => {
   scrollToDate(formatDateKey(offsetDate(today, 1)));
 });
 
+document.getElementById('refresh-btn').addEventListener('click', refreshVerifiedData);
+
 document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 });
 
 applyTheme(getPreferredTheme());
-renderStandings();
-rerenderCalendar();
+rerender();
 window.addEventListener('resize', syncStickyLayout);
 
 if ('serviceWorker' in navigator) {
