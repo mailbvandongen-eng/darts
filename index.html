@@ -22,9 +22,6 @@
       --accent-soft: #fff7ed;
       --chip-bg: rgba(255,255,255,.08);
       --chip-line: rgba(255,255,255,.16);
-      --input-bg: rgba(255,255,255,.12);
-      --input-text: #ffffff;
-      --input-placeholder: rgba(255,255,255,.64);
       --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
       --radius: 8px;
       --header-height: 122px;
@@ -43,9 +40,6 @@
       --accent-soft: rgba(249, 115, 22, 0.12);
       --chip-bg: rgba(255,255,255,.05);
       --chip-line: rgba(255,255,255,.1);
-      --input-bg: rgba(255,255,255,.08);
-      --input-text: #eff3f8;
-      --input-placeholder: rgba(239,243,248,.58);
       --shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
     }
     * { box-sizing: border-box; }
@@ -69,14 +63,11 @@
       box-shadow: 0 2px 8px rgba(0,0,0,.12);
     }
     .header-main {
-      padding: 12px 16px 10px;
+      padding: 14px 16px 8px;
     }
     .title { font-size: 1.15rem; font-weight: 700; }
-    .subtitle { margin-top: 4px; color: rgba(255,255,255,.72); font-size: .84rem; }
     .toolbar {
       padding: 0 16px 12px;
-      display: grid;
-      gap: 10px;
     }
     .toolbar-actions {
       display: flex;
@@ -103,17 +94,6 @@
       border-color: var(--accent);
       color: #fff;
     }
-    .search {
-      width: 100%;
-      border: 0;
-      border-radius: 12px;
-      padding: 13px 14px;
-      min-height: 46px;
-      background: var(--input-bg);
-      color: var(--input-text);
-    }
-    .search::placeholder { color: var(--input-placeholder); }
-    .series-row,
     .date-tabs {
       display: flex;
       gap: 8px;
@@ -121,9 +101,7 @@
       padding-bottom: 2px;
       scrollbar-width: none;
     }
-    .series-row::-webkit-scrollbar,
     .date-tabs::-webkit-scrollbar { display: none; }
-    .chip,
     .date-tab {
       flex: 0 0 auto;
       border: 1px solid var(--chip-line);
@@ -176,6 +154,9 @@
     .summary-card.highlight {
       background: linear-gradient(135deg, #fff7ed, #ffffff);
       border-color: #fdba74;
+    }
+    :root[data-theme="dark"] .summary-card.highlight {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(16, 24, 39, 0.96));
     }
     .summary-label {
       color: var(--muted);
@@ -309,56 +290,6 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
     }
-    .watchlist {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-    .watch-card {
-      display: grid;
-      gap: 10px;
-      padding: 14px;
-      background: linear-gradient(135deg, #fff7ed, #ffffff);
-      border: 1px solid #fdba74;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .watch-head,
-    .watch-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .watch-title {
-      font-weight: 800;
-    }
-    .watch-meta {
-      color: var(--muted);
-      font-size: .88rem;
-    }
-    .button-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-    .action-btn {
-      border: 1px solid var(--line);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 8px 12px;
-      min-height: 36px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-    .action-btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
     .standings-wrap { overflow-x: auto; }
     table {
       width: 100%;
@@ -382,7 +313,7 @@
       .summary-grid { grid-template-columns: 1fr; }
       .header-main {
         padding-top: 14px;
-        padding-bottom: 8px;
+        padding-bottom: 6px;
       }
       .toolbar {
         padding-left: 12px;
@@ -406,7 +337,6 @@
         text-align: left;
       }
       .utility-btn,
-      .chip,
       .date-tab {
         min-height: 40px;
       }
@@ -415,16 +345,6 @@
       }
       .event-main { grid-template-columns: 58px 1fr auto; }
       .info-grid { grid-template-columns: 1fr; }
-      .button-row {
-        display: grid;
-        grid-template-columns: 1fr;
-      }
-      .action-btn {
-        width: 100%;
-      }
-      .watch-actions {
-        align-items: stretch;
-      }
     }
   </style>
 </head>
@@ -433,16 +353,14 @@
     <header class="header">
       <div class="header-main">
         <div class="title">PDC Darts</div>
-        <div class="subtitle">3 dagen terug, 3 weken vooruit</div>
       </div>
       <div class="toolbar">
         <div class="toolbar-actions">
+          <button id="yesterday-btn" class="utility-btn" type="button">Gisteren</button>
           <button id="today-btn" class="utility-btn" type="button">Vandaag</button>
-          <button id="saved-filter-btn" class="utility-btn" type="button">Alle sessies</button>
+          <button id="tomorrow-btn" class="utility-btn" type="button">Morgen</button>
           <button id="theme-toggle" class="utility-btn" type="button">Donker thema</button>
         </div>
-        <input id="search-input" class="search" type="search" placeholder="Zoek speler, partij, toernooi of locatie">
-        <div id="series-row" class="series-row"></div>
       </div>
     </header>
 
@@ -452,14 +370,6 @@
 
     <main class="content">
       <section class="summary-grid" id="summary-grid"></section>
-
-      <section>
-        <div class="section-head">
-          <h2>Kijkplan</h2>
-          <div id="watchlist-meta" class="meta"></div>
-        </div>
-        <div id="watchlist" class="watchlist"></div>
-      </section>
 
       <section>
         <div class="section-head">
