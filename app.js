@@ -7,10 +7,12 @@ const calendarData = dartsData.dartsCalendar;
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
 const WATCHLIST_STORAGE_KEY = 'darts-watchlist-v1';
+const THEME_STORAGE_KEY = 'darts-theme-v1';
 
 const state = {
   query: '',
-  series: 'all'
+  series: 'all',
+  savedOnly: false
 };
 
 let scrollObserver = null;
@@ -102,6 +104,21 @@ function saveWatchlist() {
   window.localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([...watchlistIds]));
 }
 
+function getPreferredTheme() {
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  const button = document.getElementById('theme-toggle');
+  if (button) button.textContent = theme === 'dark' ? 'Licht thema' : 'Donker thema';
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#050b16' : '#111827');
+}
+
 const parsedEvents = calendarData.map((event, index) => ({
   ...event,
   id: `${event.date}|${event.time}|${event.event}|${event.location}|${index}`,
@@ -132,6 +149,7 @@ function filteredDays() {
   const query = state.query.trim().toLowerCase();
   const days = createWindowDays().map((group) => {
     const events = group.events.filter((event) => {
+      if (state.savedOnly && !watchlistIds.has(event.id)) return false;
       if (state.series !== 'all' && event.series !== state.series) return false;
       if (!query) return true;
       return searchableEventText(event).includes(query);
@@ -156,6 +174,20 @@ function renderSeriesRow() {
       rerenderCalendar();
     });
   });
+}
+
+function renderToolbarActions() {
+  const savedFilterButton = document.getElementById('saved-filter-btn');
+  const todayButton = document.getElementById('today-btn');
+
+  if (savedFilterButton) {
+    savedFilterButton.textContent = state.savedOnly ? 'Alleen kijkplan' : 'Alle sessies';
+    savedFilterButton.classList.toggle('active', state.savedOnly);
+  }
+
+  if (todayButton) {
+    todayButton.classList.toggle('active', !state.query && !state.savedOnly && state.series === 'all');
+  }
 }
 
 function renderDateTabs(days) {
@@ -380,12 +412,21 @@ function toggleWatch(eventId) {
   rerenderCalendar();
 }
 
+function syncStickyLayout() {
+  const headerHeight = document.querySelector('.header')?.offsetHeight || 122;
+  const dateStripHeight = document.querySelector('.date-strip')?.offsetHeight || 52;
+  document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
+  document.documentElement.style.setProperty('--date-strip-height', `${dateStripHeight}px`);
+}
+
 function rerenderCalendar() {
+  renderToolbarActions();
   renderSeriesRow();
   const days = filteredDays();
   renderSummary(days);
   renderWatchlist();
   renderCalendar();
+  syncStickyLayout();
 }
 
 function scrollToDate(dateString) {
@@ -404,13 +445,16 @@ function setupScrollSync() {
 
   if (scrollObserver) scrollObserver.disconnect();
 
+  const headerHeight = document.querySelector('.header')?.offsetHeight || 122;
+  const dateHeight = document.querySelector('.date-strip')?.offsetHeight || 52;
+
   scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
       const date = entry.target.dataset.date;
       tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.date === date));
     });
-  }, { rootMargin: '-220px 0px -60% 0px', threshold: 0.05 });
+  }, { rootMargin: `-${headerHeight + dateHeight + 12}px 0px -60% 0px`, threshold: 0.05 });
 
   sections.forEach((section) => scrollObserver.observe(section));
 }
@@ -420,8 +464,28 @@ document.getElementById('search-input').addEventListener('input', (event) => {
   rerenderCalendar();
 });
 
+document.getElementById('today-btn').addEventListener('click', () => {
+  state.query = '';
+  state.series = 'all';
+  state.savedOnly = false;
+  document.getElementById('search-input').value = '';
+  rerenderCalendar();
+  scrollToDate(getTodayString());
+});
+
+document.getElementById('saved-filter-btn').addEventListener('click', () => {
+  state.savedOnly = !state.savedOnly;
+  rerenderCalendar();
+});
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+});
+
+applyTheme(getPreferredTheme());
 renderStandings();
 rerenderCalendar();
+window.addEventListener('resize', syncStickyLayout);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

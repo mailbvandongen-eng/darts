@@ -10,7 +10,8 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
     :root {
-      --bg: #f5f6f8;
+      --bg: #f3f4f6;
+      --bg-accent: radial-gradient(circle at top, rgba(251, 146, 60, 0.12), transparent 38%);
       --surface: #ffffff;
       --surface-soft: #f9fafb;
       --header: #111827;
@@ -19,8 +20,33 @@
       --line: #e5e7eb;
       --accent: #ea580c;
       --accent-soft: #fff7ed;
+      --chip-bg: rgba(255,255,255,.08);
+      --chip-line: rgba(255,255,255,.16);
+      --input-bg: rgba(255,255,255,.12);
+      --input-text: #ffffff;
+      --input-placeholder: rgba(255,255,255,.64);
       --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
       --radius: 8px;
+      --header-height: 122px;
+      --date-strip-height: 52px;
+    }
+    :root[data-theme="dark"] {
+      --bg: #0b1120;
+      --bg-accent: radial-gradient(circle at top, rgba(234, 88, 12, 0.18), transparent 36%);
+      --surface: #101827;
+      --surface-soft: #162033;
+      --header: #050b16;
+      --text: #eff3f8;
+      --muted: #93a2b8;
+      --line: #243146;
+      --accent: #f97316;
+      --accent-soft: rgba(249, 115, 22, 0.12);
+      --chip-bg: rgba(255,255,255,.05);
+      --chip-line: rgba(255,255,255,.1);
+      --input-bg: rgba(255,255,255,.08);
+      --input-text: #eff3f8;
+      --input-placeholder: rgba(239,243,248,.58);
+      --shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -28,6 +54,8 @@
       margin: 0;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--bg);
+      background-image: var(--bg-accent);
+      background-attachment: fixed;
       color: var(--text);
     }
     button, input { font: inherit; }
@@ -50,15 +78,41 @@
       display: grid;
       gap: 10px;
     }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .toolbar-actions::-webkit-scrollbar { display: none; }
+    .utility-btn {
+      flex: 0 0 auto;
+      border: 1px solid var(--chip-line);
+      background: var(--chip-bg);
+      color: #fff;
+      border-radius: 999px;
+      padding: 9px 12px;
+      min-height: 38px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .utility-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
     .search {
       width: 100%;
       border: 0;
       border-radius: 12px;
-      padding: 12px 14px;
-      background: rgba(255,255,255,.12);
-      color: #fff;
+      padding: 13px 14px;
+      min-height: 46px;
+      background: var(--input-bg);
+      color: var(--input-text);
     }
-    .search::placeholder { color: rgba(255,255,255,.64); }
+    .search::placeholder { color: var(--input-placeholder); }
     .series-row,
     .date-tabs {
       display: flex;
@@ -72,8 +126,8 @@
     .chip,
     .date-tab {
       flex: 0 0 auto;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.08);
+      border: 1px solid var(--chip-line);
+      background: var(--chip-bg);
       color: rgba(255,255,255,.86);
       border-radius: 999px;
       padding: 8px 12px;
@@ -90,9 +144,9 @@
     }
     .date-strip {
       position: sticky;
-      top: 122px;
+      top: var(--header-height);
       z-index: 40;
-      background: rgba(245, 246, 248, .96);
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--line);
       padding: 10px 16px;
@@ -158,7 +212,7 @@
     .day-list { display: grid; gap: 14px; }
     .day-section {
       padding: 14px;
-      scroll-margin-top: 184px;
+      scroll-margin-top: calc(var(--header-height) + var(--date-strip-height) + 16px);
     }
     .day-header {
       display: flex;
@@ -187,8 +241,8 @@
       align-items: center;
       border-radius: 999px;
       background: var(--accent-soft);
-      color: #c2410c;
-      border: 1px solid #fed7aa;
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
       padding: 5px 9px;
       font-size: .72rem;
       font-weight: 700;
@@ -207,9 +261,9 @@
       grid-template-columns: 66px 1fr auto;
       gap: 12px;
       align-items: start;
-      padding: 12px 14px;
+      padding: 14px;
     }
-    .time { color: #c2410c; font-weight: 800; }
+    .time { color: var(--accent); font-weight: 800; }
     .event-title { font-weight: 700; }
     .event-sub { margin-top: 4px; color: var(--muted); font-size: .86rem; }
     .expand { color: var(--muted); font-size: .9rem; }
@@ -326,7 +380,21 @@
     }
     @media (max-width: 720px) {
       .summary-grid { grid-template-columns: 1fr; }
-      .date-strip { top: 203px; }
+      .header-main {
+        padding-top: 14px;
+        padding-bottom: 8px;
+      }
+      .toolbar {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+      .content {
+        padding: 12px;
+      }
+      .date-strip {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
       .section-head {
         display: grid;
         gap: 4px;
@@ -337,8 +405,26 @@
         margin-left: 0;
         text-align: left;
       }
+      .utility-btn,
+      .chip,
+      .date-tab {
+        min-height: 40px;
+      }
+      .event-row {
+        margin: 8px;
+      }
       .event-main { grid-template-columns: 58px 1fr auto; }
       .info-grid { grid-template-columns: 1fr; }
+      .button-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .action-btn {
+        width: 100%;
+      }
+      .watch-actions {
+        align-items: stretch;
+      }
     }
   </style>
 </head>
@@ -350,6 +436,11 @@
         <div class="subtitle">3 dagen terug, 3 weken vooruit</div>
       </div>
       <div class="toolbar">
+        <div class="toolbar-actions">
+          <button id="today-btn" class="utility-btn" type="button">Vandaag</button>
+          <button id="saved-filter-btn" class="utility-btn" type="button">Alle sessies</button>
+          <button id="theme-toggle" class="utility-btn" type="button">Donker thema</button>
+        </div>
         <input id="search-input" class="search" type="search" placeholder="Zoek speler, partij, toernooi of locatie">
         <div id="series-row" class="series-row"></div>
       </div>
