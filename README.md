@@ -1,5 +1,7 @@
 # Darts Planner
 
+Huidige versie: `v0.7.0`
+
 Mobiele PWA voor PDC darts met:
 
 - jaarkalender per toernooi

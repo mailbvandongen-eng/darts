@@ -1,3 +1,4 @@
+const APP_VERSION = 'v0.7.0';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
@@ -142,21 +143,13 @@ function createWindowDays() {
 }
 
 function emptyStateCopy(dateString) {
-  const yesterdayString = formatDateKey(offsetDate(today, -1));
-  const tomorrowString = formatDateKey(offsetDate(today, 1));
-  if (dateString === yesterdayString) return 'Geen wedstrijden gisteren';
+  if (dateString === formatDateKey(offsetDate(today, -1))) return 'Geen wedstrijden gisteren';
   if (dateString === getTodayString()) return 'Geen wedstrijden vandaag';
-  if (dateString === tomorrowString) return 'Geen wedstrijden morgen';
+  if (dateString === formatDateKey(offsetDate(today, 1))) return 'Geen wedstrijden morgen';
   return 'Geen wedstrijden';
 }
 
-function renderToolbarActions() {
-  const currentSection = document.querySelector('.date-tab.active')?.dataset.date || getTodayString();
-  const yesterdayDate = formatDateKey(offsetDate(today, -1));
-  const tomorrowDate = formatDateKey(offsetDate(today, 1));
-  document.getElementById('yesterday-btn').classList.toggle('active', currentSection === yesterdayDate);
-  document.getElementById('today-btn').classList.toggle('active', currentSection === getTodayString());
-  document.getElementById('tomorrow-btn').classList.toggle('active', currentSection === tomorrowDate);
+function renderHeaderActions() {
   document.getElementById('refresh-btn').textContent = state.isRefreshing ? 'Verversen...' : 'Ververs';
 }
 
@@ -177,31 +170,9 @@ function renderDateTabs(days) {
   }
 }
 
-function renderSummary(days) {
-  const yesterdayKey = formatDateKey(offsetDate(today, -1));
-  const tomorrowKey = formatDateKey(offsetDate(today, 1));
-  const cards = [
-    { date: yesterdayKey, label: 'Gisteren', count: days.find((group) => group.date === yesterdayKey)?.events.length || 0, copy: 'Er was darts' },
-    { date: getTodayString(), label: 'Vandaag', count: days.find((group) => group.date === getTodayString())?.events.length || 0, copy: 'Er is darts', highlight: true },
-    { date: tomorrowKey, label: 'Morgen', count: days.find((group) => group.date === tomorrowKey)?.events.length || 0, copy: 'Er is darts' }
-  ];
-
-  document.getElementById('summary-grid').innerHTML = cards.map((card) => `
-    <article class="summary-card jumpable${card.highlight ? ' highlight' : ''}" data-jump-date="${card.date}">
-      <div class="summary-label">${card.label}</div>
-      <div class="summary-value">${card.count}</div>
-      <div class="meta">${card.count ? card.copy : emptyStateCopy(card.date)}</div>
-    </article>
-  `).join('');
-
-  document.querySelectorAll('[data-jump-date]').forEach((card) => {
-    card.addEventListener('click', () => scrollToDate(card.dataset.jumpDate));
-  });
-}
-
 function renderCalendar() {
   const days = createWindowDays();
-  document.getElementById('calendar-meta').textContent = `Gecontroleerd: ${updatedAt || sourceMeta?.calendar?.snapshotDate || '-'}`;
+  document.getElementById('calendar-meta').textContent = `${APP_VERSION} · gecontroleerd: ${updatedAt || sourceMeta?.calendar?.snapshotDate || '-'}`;
   renderDateTabs(days);
 
   const container = document.getElementById('day-list');
@@ -308,20 +279,21 @@ function bindAccordion() {
 }
 
 function rerender() {
-  const days = createWindowDays();
-  renderToolbarActions();
-  renderSummary(days);
+  renderHeaderActions();
   renderCalendar();
   syncStickyLayout();
+  setTimeout(() => {
+    scrollToDate(getTodayString(), false);
+  }, 0);
 }
 
-function scrollToDate(dateString) {
+function scrollToDate(dateString, smooth = true) {
   const target = document.getElementById(`date-${dateString}`);
   if (!target) return;
   const headerHeight = document.querySelector('.header')?.offsetHeight || 0;
   const dateHeight = document.querySelector('.date-strip')?.offsetHeight || 0;
   const top = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - dateHeight - 8;
-  window.scrollTo({ top, behavior: 'smooth' });
+  window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 function setupScrollSync() {
@@ -339,11 +311,25 @@ function setupScrollSync() {
       if (!entry.isIntersecting) return;
       const date = entry.target.dataset.date;
       tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.date === date));
-      renderToolbarActions();
+      centerActiveTab(date);
     });
   }, { rootMargin: `-${headerHeight + dateHeight + 12}px 0px -60% 0px`, threshold: 0.05 });
 
   sections.forEach((section) => scrollObserver.observe(section));
+}
+
+function centerActiveTab(dateString) {
+  const container = document.getElementById('date-tabs');
+  const activeButton = container.querySelector(`[data-date="${dateString}"]`);
+  if (!activeButton) return;
+  container.querySelectorAll('.date-tab').forEach((tab) => {
+    tab.classList.toggle('active', tab === activeButton);
+  });
+  const wrapper = document.querySelector('.date-strip');
+  wrapper.scrollTo({
+    left: activeButton.offsetLeft - ((wrapper.clientWidth - activeButton.clientWidth) / 2),
+    behavior: 'smooth'
+  });
 }
 
 function syncStickyLayout() {
@@ -370,7 +356,7 @@ function parseFetchedData(scriptText) {
 
 async function refreshVerifiedData() {
   state.isRefreshing = true;
-  renderToolbarActions();
+  renderHeaderActions();
 
   try {
     const response = await fetch(`data.js?ts=${Date.now()}`, { cache: 'no-store' });
@@ -383,21 +369,9 @@ async function refreshVerifiedData() {
     window.alert('Verversen mislukt. Probeer het opnieuw wanneer de nieuwste geverifieerde data beschikbaar is.');
   } finally {
     state.isRefreshing = false;
-    renderToolbarActions();
+    renderHeaderActions();
   }
 }
-
-document.getElementById('yesterday-btn').addEventListener('click', () => {
-  scrollToDate(formatDateKey(offsetDate(today, -1)));
-});
-
-document.getElementById('today-btn').addEventListener('click', () => {
-  scrollToDate(getTodayString());
-});
-
-document.getElementById('tomorrow-btn').addEventListener('click', () => {
-  scrollToDate(formatDateKey(offsetDate(today, 1)));
-});
 
 document.getElementById('refresh-btn').addEventListener('click', refreshVerifiedData);
 
