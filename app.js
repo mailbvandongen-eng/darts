@@ -1,4 +1,4 @@
-const APP_VERSION = 'v0.7.0';
+const APP_VERSION = 'v0.7.1';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
@@ -384,5 +384,7 @@ rerender();
 window.addEventListener('resize', syncStickyLayout);
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((registration) => {
+    registration.update().catch(() => {});
+  }).catch(() => {});
 }
