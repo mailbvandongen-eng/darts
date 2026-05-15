@@ -119,6 +119,10 @@
       padding: 14px;
       min-height: 112px;
     }
+    .summary-card.highlight {
+      background: linear-gradient(135deg, #fff7ed, #ffffff);
+      border-color: #fdba74;
+    }
     .summary-label {
       color: var(--muted);
       font-size: .78rem;
@@ -251,6 +255,56 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
     }
+    .watchlist {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .watch-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      background: linear-gradient(135deg, #fff7ed, #ffffff);
+      border: 1px solid #fdba74;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .watch-head,
+    .watch-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .watch-title {
+      font-weight: 800;
+    }
+    .watch-meta {
+      color: var(--muted);
+      font-size: .88rem;
+    }
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .action-btn {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      min-height: 36px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .action-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
     .standings-wrap { overflow-x: auto; }
     table {
       width: 100%;
@@ -307,6 +361,14 @@
 
     <main class="content">
       <section class="summary-grid" id="summary-grid"></section>
+
+      <section>
+        <div class="section-head">
+          <h2>Kijkplan</h2>
+          <div id="watchlist-meta" class="meta"></div>
+        </div>
+        <div id="watchlist" class="watchlist"></div>
+      </section>
 
       <section>
         <div class="section-head">

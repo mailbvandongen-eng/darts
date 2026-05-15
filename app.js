@@ -6,6 +6,7 @@ const calendarData = dartsData.dartsCalendar;
 
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
+const WATCHLIST_STORAGE_KEY = 'darts-watchlist-v1';
 
 const state = {
   query: '',
@@ -13,6 +14,7 @@ const state = {
 };
 
 let scrollObserver = null;
+let watchlistIds = loadWatchlist();
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -87,9 +89,22 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function loadWatchlist() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(WATCHLIST_STORAGE_KEY) || '[]');
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveWatchlist() {
+  window.localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([...watchlistIds]));
+}
+
 const parsedEvents = calendarData.map((event, index) => ({
   ...event,
-  id: `event-${index}`,
+  id: `${event.date}|${event.time}|${event.event}|${event.location}|${index}`,
   title: event.event,
   baseEvent: normalizeEventName(event.event),
   series: seriesFor(event.event),
@@ -163,7 +178,6 @@ function renderDateTabs(days) {
 function renderSummary(days) {
   const visibleEvents = days.flatMap((group) => group.events);
   const nextEvent = visibleEvents.find((event) => event.dateObj >= today) || parsedEvents.find((event) => event.dateObj >= today) || parsedEvents[parsedEvents.length - 1];
-  const tournaments = new Set(visibleEvents.map((event) => event.baseEvent));
 
   document.getElementById('summary-grid').innerHTML = `
     <article class="summary-card">
@@ -175,6 +189,11 @@ function renderSummary(days) {
       <div class="summary-label">Eerstvolgende sessie</div>
       <div class="summary-value">${escapeHtml(nextEvent.time)}</div>
       <div class="meta">${escapeHtml(nextEvent.title)} · ${formatDate(nextEvent.date)}</div>
+    </article>
+    <article class="summary-card highlight">
+      <div class="summary-label">Kijkplan</div>
+      <div class="summary-value">${watchlistIds.size}</div>
+      <div class="meta">${watchlistIds.size ? 'bewaarde sessie(s)' : 'sla sessies op vanuit de kalender'}</div>
     </article>
     <article class="summary-card">
       <div class="summary-label">Venster</div>
@@ -245,6 +264,9 @@ function renderCalendar() {
                             <div class="info-card"><div class="info-label">Locatie</div><div class="info-value">${escapeHtml(event.location)}</div></div>
                             <div class="info-card"><div class="info-label">Kanaal</div><div class="info-value">${escapeHtml(event.channel)}</div></div>
                           </div>
+                          <div class="button-row">
+                            <button class="action-btn watch-toggle" data-watch-id="${escapeHtml(event.id)}" type="button">Bewaar in kijkplan</button>
+                          </div>
                           <div class="match-list">
                             ${event.matches.map((match) => `
                               <div class="match-item">
@@ -270,6 +292,7 @@ function renderCalendar() {
   }).join('');
 
   bindAccordion();
+  renderWatchButtons();
   setupScrollSync();
 }
 
@@ -300,10 +323,68 @@ function renderStandings() {
   `).join('');
 }
 
+function renderWatchButtons() {
+  document.querySelectorAll('.watch-toggle').forEach((button) => {
+    const saved = watchlistIds.has(button.dataset.watchId);
+    button.textContent = saved ? 'Verwijder uit kijkplan' : 'Bewaar in kijkplan';
+    button.classList.toggle('primary', !saved);
+    button.addEventListener('click', () => toggleWatch(button.dataset.watchId));
+  });
+}
+
+function renderWatchlist() {
+  const container = document.getElementById('watchlist');
+  const events = parsedEvents.filter((event) => watchlistIds.has(event.id)).sort((a, b) => a.dateObj - b.dateObj);
+  document.getElementById('watchlist-meta').textContent = `${events.length} sessie(s)`;
+
+  if (!events.length) {
+    container.innerHTML = '<div class="empty-state">Nog geen sessies bewaard. Open een event en zet het in je kijkplan.</div>';
+    return;
+  }
+
+  container.innerHTML = events.map((event) => `
+    <article class="watch-card">
+      <div class="watch-head">
+        <div>
+          <div class="watch-title">${escapeHtml(event.title)}</div>
+          <div class="watch-meta">${escapeHtml(formatDate(event.date))} · ${escapeHtml(event.time)} · ${escapeHtml(event.location)}</div>
+        </div>
+        <div class="badge">${escapeHtml(event.channel)}</div>
+      </div>
+      <div class="watch-actions">
+        <div class="watch-meta">${escapeHtml(event.series)}</div>
+        <div class="button-row">
+          <button class="action-btn primary" data-jump-date="${escapeHtml(event.date)}" type="button">Ga naar dag</button>
+          <button class="action-btn watch-remove" data-watch-id="${escapeHtml(event.id)}" type="button">Verwijder</button>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  container.querySelectorAll('[data-jump-date]').forEach((button) => {
+    button.addEventListener('click', () => scrollToDate(button.dataset.jumpDate));
+  });
+
+  container.querySelectorAll('.watch-remove').forEach((button) => {
+    button.addEventListener('click', () => toggleWatch(button.dataset.watchId));
+  });
+}
+
+function toggleWatch(eventId) {
+  if (watchlistIds.has(eventId)) {
+    watchlistIds.delete(eventId);
+  } else {
+    watchlistIds.add(eventId);
+  }
+  saveWatchlist();
+  rerenderCalendar();
+}
+
 function rerenderCalendar() {
   renderSeriesRow();
   const days = filteredDays();
   renderSummary(days);
+  renderWatchlist();
   renderCalendar();
 }
 

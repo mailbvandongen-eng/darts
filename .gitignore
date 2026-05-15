@@ -1,3 +1,6 @@
 pdc-*.html
 pdc-*.json
 pdc-*.txt
+edge-log*.txt
+dumped-dom.html
+local-*.png
