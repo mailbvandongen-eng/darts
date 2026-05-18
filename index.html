@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#151515">
-  <meta name="description" content="PDC Darts: kalender per datum, schema's, spelers en toernooi-info.">
-  <title>Darts</title>
+  <meta name="description" content="Darts op TV: kalender, kanalen, streams en speeldagschema's.">
+  <title>Darts op TV</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
@@ -22,6 +22,7 @@
       --accent: #d9291c;
       --accent-strong: #008f8a;
       --accent-soft: #fbe3dd;
+      --gold: #d7a63b;
       --chip-bg: rgba(255,255,255,.10);
       --chip-line: rgba(255,255,255,.18);
       --shadow: 0 12px 26px rgba(28, 26, 21, 0.11);
@@ -42,6 +43,7 @@
       --accent: #ff4938;
       --accent-strong: #27c9bd;
       --accent-soft: rgba(255, 73, 56, 0.14);
+      --gold: #f2c15d;
       --chip-bg: rgba(255,255,255,.10);
       --chip-line: rgba(255,255,255,.12);
       --shadow: 0 14px 32px rgba(0, 0, 0, 0.30);
@@ -67,18 +69,19 @@
       border-bottom: 2px solid var(--accent);
     }
     .header-main {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
       gap: 12px;
-      padding: 12px 16px;
+      padding: 13px 16px 11px;
     }
+    .brand { min-width: 0; }
     .title {
       display: inline-flex;
       align-items: center;
       gap: 9px;
-      font-size: 1rem;
-      font-weight: 820;
+      font-size: 1.16rem;
+      font-weight: 880;
       letter-spacing: 0;
     }
     .title::before {
@@ -88,6 +91,15 @@
       border-radius: 50%;
       background: var(--accent);
       box-shadow: 0 0 0 3px rgba(217, 41, 28, .18);
+    }
+    .tagline {
+      margin-top: 3px;
+      color: rgba(255,255,255,.68);
+      font-size: .78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .header-actions {
       display: flex;
@@ -150,8 +162,51 @@
       color: #fff;
       box-shadow: 0 5px 14px rgba(217, 41, 28, .24);
     }
-    .content { padding: 18px 16px 28px; }
+    .content { padding: 16px 16px 28px; }
     .meta { color: var(--muted); font-size: .86rem; }
+    .tv-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, var(--accent) 8%), var(--surface));
+      box-shadow: var(--shadow);
+    }
+    .tv-kicker {
+      color: var(--accent);
+      font-size: .72rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .tv-title {
+      margin-top: 4px;
+      font-size: 1rem;
+      font-weight: 850;
+    }
+    .tv-copy {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      min-height: 34px;
+      border-radius: 10px;
+      background: var(--header);
+      color: #fff;
+      font-size: .76rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      box-shadow: inset 0 -2px 0 var(--accent);
+    }
     .day-list { display: grid; gap: 26px; margin-top: 12px; }
     .day-section {
       padding: 0 0 8px;
@@ -206,9 +261,9 @@
     }
     .event-main {
       display: grid;
-      grid-template-columns: 66px 1fr auto;
+      grid-template-columns: 66px 1fr auto auto;
       gap: 12px;
-      align-items: start;
+      align-items: center;
       padding: 12px 14px;
     }
     .time {
@@ -216,8 +271,24 @@
       font-variant-numeric: tabular-nums;
       font-weight: 850;
     }
-    .event-title { font-weight: 700; }
+    .event-title { font-weight: 780; }
     .event-sub { margin-top: 4px; color: var(--muted); font-size: .86rem; }
+    .channel-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 74px;
+      max-width: 128px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--header-strip);
+      color: #fff;
+      font-size: .74rem;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .expand { color: var(--muted); font-size: 1rem; line-height: 1; }
     .event-details {
       display: none;
@@ -280,7 +351,22 @@
       .utility-btn { width: 40px; height: 40px; min-height: 40px; }
       .date-tab { min-height: 40px; }
       .event-row { margin: 0; }
-      .event-main { grid-template-columns: 58px 1fr auto; }
+      .tv-panel {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .live-badge {
+        justify-self: start;
+      }
+      .event-main {
+        grid-template-columns: 58px 1fr auto;
+        align-items: start;
+      }
+      .channel-pill {
+        grid-column: 2 / 3;
+        justify-self: start;
+        margin-top: -4px;
+      }
       .event-details { padding-left: 72px; }
       .info-grid { grid-template-columns: 1fr; }
     }
@@ -290,7 +376,10 @@
   <div class="app">
     <header class="header">
       <div class="header-main">
-        <div class="title">Darts</div>
+        <div class="brand">
+          <div class="title">Darts op TV</div>
+          <div class="tagline">Speelschema, zenders en live streams</div>
+        </div>
         <div class="header-actions">
           <button id="refresh-btn" class="utility-btn" type="button" aria-label="Ververs data" title="Ververs data">↻</button>
           <button id="theme-toggle" class="utility-btn" type="button" aria-label="Wissel thema" title="Wissel thema">◐</button>
@@ -303,6 +392,14 @@
     </div>
 
     <main class="content">
+      <section class="tv-panel" aria-label="TV gids">
+        <div>
+          <div class="tv-kicker">Vandaag kijken</div>
+          <div class="tv-title">Dartskalender met zenders en streams</div>
+          <div class="tv-copy">Ververs op speeldagen voor de nieuwste beschikbare stream- en boardinformatie.</div>
+        </div>
+        <div class="live-badge">LIVE</div>
+      </section>
       <div id="calendar-meta" class="meta"></div>
       <div id="day-list" class="day-list"></div>
     </main>

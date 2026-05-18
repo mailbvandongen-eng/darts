@@ -1,4 +1,4 @@
-const APP_VERSION = 'v0.7.5';
+const APP_VERSION = 'v0.7.6';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
@@ -220,8 +220,9 @@ function renderCalendar() {
                             <div class="time">${escapeHtml(event.time)}</div>
                             <div>
                               <div class="event-title">${escapeHtml(event.title)}</div>
-                              <div class="event-sub">${escapeHtml(event.location)} · ${escapeHtml(event.channel)}</div>
+                              <div class="event-sub">${escapeHtml(event.location)}</div>
                             </div>
+                            <div class="channel-pill">${escapeHtml(event.channel)}</div>
                             <div class="expand">›</div>
                           </div>
                         </div>
