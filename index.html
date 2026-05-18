@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111827">
   <meta name="description" content="PDC Darts: kalender per datum, schema's, spelers en toernooi-info.">
-  <title>PDC Darts</title>
+  <title>Darts</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
@@ -71,7 +71,7 @@
       gap: 12px;
       padding: 12px 16px;
     }
-    .title { font-size: 1.15rem; font-weight: 700; }
+    .title { font-size: 1rem; font-weight: 750; letter-spacing: 0; }
     .header-actions {
       display: flex;
       align-items: center;
@@ -79,19 +79,22 @@
     }
     .utility-btn {
       flex: 0 0 auto;
-      border: 1px solid var(--chip-line);
+      border: 0;
       background: var(--chip-bg);
       color: #fff;
-      border-radius: 999px;
-      padding: 8px 12px;
-      min-height: 34px;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      min-height: 38px;
       font-weight: 700;
       cursor: pointer;
-      white-space: nowrap;
+      line-height: 1;
+      font-size: 1.05rem;
     }
+    .utility-btn:hover { background: rgba(255,255,255,.16); }
     .utility-btn.active {
       background: var(--accent);
-      border-color: var(--accent);
       color: #fff;
     }
     .date-strip {
@@ -129,20 +132,11 @@
       background: #ffffff;
       color: var(--header);
     }
-    .content { padding: 16px; }
-    .day-section,
-    .competition-block,
-    .event-row,
-    .event-details {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
+    .content { padding: 18px 16px 28px; }
     .meta { color: var(--muted); font-size: .86rem; }
-    .day-list { display: grid; gap: 14px; }
+    .day-list { display: grid; gap: 26px; margin-top: 12px; }
     .day-section {
-      padding: 14px;
+      padding: 0 0 8px;
       scroll-margin-top: calc(var(--header-height) + var(--date-strip-height) + 16px);
     }
     .day-header {
@@ -150,72 +144,74 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--line);
+      margin-bottom: 10px;
+      padding-bottom: 0;
     }
-    .day-title { font-size: 1rem; font-weight: 700; }
-    .competition-list { display: grid; gap: 10px; }
-    .competition-block { overflow: hidden; }
+    .day-title { font-size: 1.05rem; font-weight: 800; }
+    .competition-list { display: grid; gap: 18px; }
+    .competition-block { overflow: visible; }
     .competition-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
-      padding: 12px 14px;
-      background: var(--surface-soft);
-      border-bottom: 1px solid var(--line);
+      padding: 0 0 6px;
+      background: transparent;
     }
     .competition-name { font-size: .92rem; font-weight: 800; text-transform: uppercase; }
     .badge {
       display: inline-flex;
       align-items: center;
       border-radius: 999px;
-      background: var(--accent-soft);
+      background: transparent;
       color: var(--accent);
-      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
-      padding: 5px 9px;
+      border: 0;
+      padding: 0;
       font-size: .72rem;
       font-weight: 700;
       white-space: nowrap;
     }
-    .event-list { display: grid; }
+    .event-list { display: grid; gap: 6px; }
     .event-row {
-      margin: 10px;
+      margin: 0;
       overflow: hidden;
       cursor: pointer;
-      transition: border-color .15s ease;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 2px 10px rgba(17, 24, 39, 0.04);
+      transition: background .15s ease;
     }
-    .event-row.open { border-color: #fdba74; }
+    .event-row.open { background: var(--surface-soft); }
     .event-main {
       display: grid;
       grid-template-columns: 66px 1fr auto;
       gap: 12px;
       align-items: start;
-      padding: 14px;
+      padding: 12px 14px;
     }
     .time { color: var(--accent); font-weight: 800; }
     .event-title { font-weight: 700; }
     .event-sub { margin-top: 4px; color: var(--muted); font-size: .86rem; }
-    .expand { color: var(--muted); font-size: .9rem; }
+    .expand { color: var(--muted); font-size: 1rem; line-height: 1; }
     .event-details {
       display: none;
-      margin: 0 10px 10px;
-      padding: 12px 14px;
+      margin: -2px 0 8px;
+      padding: 4px 14px 14px 80px;
       background: var(--surface-soft);
+      border-radius: 0 0 var(--radius) var(--radius);
     }
     .event-details.open { display: block; }
     .info-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 6px 18px;
       margin-bottom: 12px;
     }
     .info-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      padding: 10px 12px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
     }
     .info-label { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; }
     .info-value { margin-top: 6px; font-size: .92rem; font-weight: 600; }
@@ -226,7 +222,7 @@
       gap: 10px;
       align-items: start;
       padding-top: 8px;
-      border-top: 1px solid var(--line);
+      border-top: 0;
     }
     .match-item:first-child { padding-top: 0; border-top: 0; }
     .match-time { color: #c2410c; font-weight: 800; }
@@ -236,9 +232,9 @@
       padding: 18px;
       text-align: center;
       color: var(--muted);
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
+      background: transparent;
+      border: 0;
+      border-radius: 0;
     }
     @media (max-width: 720px) {
       .header-main {
@@ -251,14 +247,11 @@
       .date-strip {
         top: 54px;
       }
-      .utility-btn,
-      .date-tab {
-        min-height: 40px;
-      }
-      .event-row {
-        margin: 8px;
-      }
+      .utility-btn { width: 40px; height: 40px; min-height: 40px; }
+      .date-tab { min-height: 40px; }
+      .event-row { margin: 0; }
       .event-main { grid-template-columns: 58px 1fr auto; }
+      .event-details { padding-left: 72px; }
       .info-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -267,10 +260,10 @@
   <div class="app">
     <header class="header">
       <div class="header-main">
-        <div class="title">PDC Darts</div>
+        <div class="title">Darts</div>
         <div class="header-actions">
-          <button id="refresh-btn" class="utility-btn" type="button">Ververs</button>
-          <button id="theme-toggle" class="utility-btn" type="button">Donker</button>
+          <button id="refresh-btn" class="utility-btn" type="button" aria-label="Ververs data" title="Ververs data">↻</button>
+          <button id="theme-toggle" class="utility-btn" type="button" aria-label="Wissel thema" title="Wissel thema">◐</button>
         </div>
       </div>
     </header>

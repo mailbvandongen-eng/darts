@@ -1,6 +1,6 @@
 # Darts Planner
 
-Huidige versie: `v0.7.2`
+Huidige versie: `v0.7.3`
 
 Mobiele PWA voor PDC darts met:
 

@@ -1,4 +1,4 @@
-const APP_VERSION = 'v0.7.2';
+const APP_VERSION = 'v0.7.3';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
@@ -127,7 +127,11 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   const button = document.getElementById('theme-toggle');
-  if (button) button.textContent = theme === 'dark' ? 'Licht' : 'Donker';
+  if (button) {
+    button.textContent = theme === 'dark' ? '☀' : '◐';
+    button.setAttribute('aria-label', theme === 'dark' ? 'Licht thema' : 'Donker thema');
+    button.setAttribute('title', theme === 'dark' ? 'Licht thema' : 'Donker thema');
+  }
   const themeColor = document.querySelector('meta[name="theme-color"]');
   if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#050b16' : '#111827');
 }
@@ -150,7 +154,10 @@ function emptyStateCopy(dateString) {
 }
 
 function renderHeaderActions() {
-  document.getElementById('refresh-btn').textContent = state.isRefreshing ? 'Verversen...' : 'Ververs';
+  const button = document.getElementById('refresh-btn');
+  button.textContent = state.isRefreshing ? '…' : '↻';
+  button.setAttribute('aria-label', state.isRefreshing ? 'Verversen' : 'Ververs data');
+  button.setAttribute('title', state.isRefreshing ? 'Verversen' : 'Ververs data');
 }
 
 function renderDateTabs(days) {
@@ -215,7 +222,7 @@ function renderCalendar() {
                               <div class="event-title">${escapeHtml(event.title)}</div>
                               <div class="event-sub">${escapeHtml(event.location)} · ${escapeHtml(event.channel)}</div>
                             </div>
-                            <div class="expand">Open</div>
+                            <div class="expand">›</div>
                           </div>
                         </div>
                         <div class="event-details" id="${detailId}">
@@ -266,14 +273,14 @@ function bindAccordion() {
         if (openRow !== row) {
           openRow.classList.remove('open');
           const expand = openRow.querySelector('.expand');
-          if (expand) expand.textContent = 'Open';
+          if (expand) expand.textContent = '›';
         }
       });
 
       detail.classList.toggle('open', !isOpen);
       row.classList.toggle('open', !isOpen);
       const expand = row.querySelector('.expand');
-      if (expand) expand.textContent = isOpen ? 'Open' : 'Sluit';
+      if (expand) expand.textContent = isOpen ? '›' : '⌄';
     });
   });
 }
