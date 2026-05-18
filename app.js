@@ -1,4 +1,4 @@
-const APP_VERSION = 'v0.7.1';
+const APP_VERSION = 'v0.7.2';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;

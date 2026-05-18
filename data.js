@@ -1,3 +1,4 @@
+(() => {
 const lastUpdated = '2026-05-13';
 const dartsPlayers = {
             'Littler': {name: 'Luke Littler'},
@@ -597,3 +598,4 @@ const sourceMeta = {
     }
 };
 window.DARTS_DATA = { lastUpdated, dartsPlayers, plDartsStandings, dartsCalendar, officialPlayers, sourceMeta };
+})();
