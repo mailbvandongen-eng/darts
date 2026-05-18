@@ -3,46 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#173f2b">
   <meta name="description" content="PDC Darts: kalender per datum, schema's, spelers en toernooi-info.">
   <title>Darts</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
     :root {
-      --bg: #f3f4f6;
-      --bg-accent: radial-gradient(circle at top, rgba(251, 146, 60, 0.12), transparent 38%);
+      --bg: #f6f4ef;
+      --bg-accent:
+        radial-gradient(circle at top left, rgba(23, 63, 43, 0.13), transparent 34%),
+        radial-gradient(circle at top right, rgba(226, 61, 40, 0.12), transparent 30%);
       --surface: #ffffff;
-      --surface-soft: #f9fafb;
-      --header: #1a472a;
-      --header-strip: #2d5a3d;
-      --text: #111827;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --accent: #ea580c;
-      --accent-soft: #fff7ed;
-      --chip-bg: rgba(255,255,255,.08);
-      --chip-line: rgba(255,255,255,.16);
-      --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+      --surface-soft: #f0eee7;
+      --header: #173f2b;
+      --header-strip: #b92f24;
+      --text: #181713;
+      --muted: #716d63;
+      --line: #ded9ce;
+      --accent: #e23d28;
+      --accent-strong: #173f2b;
+      --accent-soft: #fde7df;
+      --chip-bg: rgba(255,255,255,.14);
+      --chip-line: rgba(255,255,255,.2);
+      --shadow: 0 10px 24px rgba(45, 39, 29, 0.10);
       --radius: 8px;
       --header-height: 108px;
       --date-strip-height: 48px;
     }
     :root[data-theme="dark"] {
-      --bg: #0b1120;
-      --bg-accent: radial-gradient(circle at top, rgba(234, 88, 12, 0.18), transparent 36%);
-      --surface: #101827;
-      --surface-soft: #162033;
-      --header: #0f172a;
-      --header-strip: #1e293b;
-      --text: #eff3f8;
-      --muted: #93a2b8;
-      --line: #243146;
-      --accent: #f97316;
-      --accent-soft: rgba(249, 115, 22, 0.12);
-      --chip-bg: rgba(255,255,255,.05);
-      --chip-line: rgba(255,255,255,.1);
-      --shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      --bg: #11100d;
+      --bg-accent:
+        radial-gradient(circle at top left, rgba(44, 121, 80, 0.20), transparent 34%),
+        radial-gradient(circle at top right, rgba(226, 61, 40, 0.18), transparent 31%);
+      --surface: #1c1b17;
+      --surface-soft: #26231d;
+      --header: #153826;
+      --header-strip: #8f261e;
+      --text: #f3efe5;
+      --muted: #b0a99a;
+      --line: #393429;
+      --accent: #ff5a3d;
+      --accent-strong: #3bb273;
+      --accent-soft: rgba(255, 90, 61, 0.14);
+      --chip-bg: rgba(255,255,255,.10);
+      --chip-line: rgba(255,255,255,.12);
+      --shadow: 0 14px 32px rgba(0, 0, 0, 0.30);
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -62,7 +68,7 @@
       z-index: 50;
       background: var(--header);
       color: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      box-shadow: 0 2px 14px rgba(0,0,0,.14);
     }
     .header-main {
       display: flex;
@@ -92,7 +98,7 @@
       line-height: 1;
       font-size: 1.05rem;
     }
-    .utility-btn:hover { background: rgba(255,255,255,.16); }
+    .utility-btn:hover { background: rgba(255,255,255,.20); }
     .utility-btn.active {
       background: var(--accent);
       color: #fff;
@@ -129,7 +135,7 @@
       white-space: nowrap;
     }
     .date-tab.active {
-      background: #ffffff;
+      background: #fffaf0;
       color: var(--header);
     }
     .content { padding: 18px 16px 28px; }
@@ -178,7 +184,7 @@
       cursor: pointer;
       border-radius: var(--radius);
       background: var(--surface);
-      box-shadow: 0 2px 10px rgba(17, 24, 39, 0.04);
+      box-shadow: 0 2px 12px rgba(45, 39, 29, 0.06);
       transition: background .15s ease;
     }
     .event-row.open { background: var(--surface-soft); }
@@ -225,7 +231,7 @@
       border-top: 0;
     }
     .match-item:first-child { padding-top: 0; border-top: 0; }
-    .match-time { color: #c2410c; font-weight: 800; }
+    .match-time { color: var(--accent-strong); font-weight: 800; }
     .match-text { font-size: .94rem; }
     .match-note { margin-top: 4px; color: var(--muted); font-size: .82rem; }
     .empty-state {
