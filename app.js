@@ -1,4 +1,4 @@
-const APP_VERSION = 'v0.7.4';
+const APP_VERSION = 'v0.7.5';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
@@ -133,7 +133,7 @@ function applyTheme(theme) {
     button.setAttribute('title', theme === 'dark' ? 'Licht thema' : 'Donker thema');
   }
   const themeColor = document.querySelector('meta[name="theme-color"]');
-  if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#11100d' : '#173f2b');
+  if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#101010' : '#151515');
 }
 
 function createWindowDays() {
