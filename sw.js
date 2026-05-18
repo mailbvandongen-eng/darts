@@ -1,4 +1,4 @@
-const CACHE_NAME = 'darts-planner-v11';
+const CACHE_NAME = 'darts-planner-v12';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './data.js', './app.js'];
 const NETWORK_FIRST_ASSETS = new Set(['', 'index.html', 'app.js', 'data.js', 'manifest.webmanifest', 'sw.js']);
 

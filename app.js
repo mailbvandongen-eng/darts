@@ -1,4 +1,4 @@
-const APP_VERSION = 'v0.7.6';
+const APP_VERSION = 'v0.7.7';
 const THEME_STORAGE_KEY = 'darts-theme-v1';
 const WINDOW_DAYS_BACK = 3;
 const WINDOW_DAYS_FORWARD = 21;
@@ -108,6 +108,57 @@ function formatMatch(match) {
   return away ? `${home} vs ${away}` : home;
 }
 
+function sessionPart(timeString) {
+  const hour = Number(String(timeString || '0').split(':')[0]);
+  if (hour < 6) return 'Nacht';
+  if (hour < 12) return 'Ochtend';
+  if (hour < 17) return 'Middag';
+  return 'Avond';
+}
+
+function roundLabel(value) {
+  const text = String(value || '').toLowerCase();
+  if (text.includes('finale') && !text.includes('halve') && !text.includes('kwart')) return 'Finale';
+  if (text.includes('halve finale') || text.includes('halve finales')) return 'Halve finales';
+  if (text.includes('kwartfinale') || text.includes('kwartfinales')) return 'Kwartfinales';
+  if (text.includes('laatste 16')) return 'Laatste 16';
+  if (text.includes('laatste 32')) return 'Laatste 32';
+  if (text.includes('tweede ronde')) return 'Tweede ronde';
+  if (text.includes('eerste ronde')) return 'Eerste ronde';
+  if (text.includes('ronde')) return 'Ronde';
+  return '';
+}
+
+function hasNamedPlayers(match) {
+  return Boolean(match && !match.label && (match.home || match.away));
+}
+
+function matchSummary(matches) {
+  const items = matches || [];
+  const namedMatches = items.filter(hasNamedPlayers).slice(0, 3);
+  if (namedMatches.length) return namedMatches.map(formatMatch).join(' · ');
+
+  const labels = items.map(formatMatch).filter(Boolean).slice(0, 2);
+  if (labels.length) return `${labels.join(' · ')}. Exacte partijen volgen zodra de order of play bekend is.`;
+
+  return 'Exacte partijen volgen zodra de order of play bekend is.';
+}
+
+function guideLabel(dateString, index = 0) {
+  if (dateString === getTodayString()) return 'Vandaag';
+  if (dateString === formatDateKey(offsetDate(today, 1))) return 'Morgen';
+  return index === 0 ? 'Eerstvolgende' : 'Daarna';
+}
+
+function createGuideDays() {
+  const dates = Object.keys(groupedByDateMap)
+    .filter((date) => date >= getTodayString())
+    .sort();
+  const preferredDates = [getTodayString(), formatDateKey(offsetDate(today, 1))].filter((date) => groupedByDateMap[date]?.length);
+  const nextDates = dates.filter((date) => !preferredDates.includes(date)).slice(0, Math.max(0, 2 - preferredDates.length));
+  return [...preferredDates, ...nextDates].slice(0, 2).map((date) => ({ date, events: groupedByDateMap[date] || [] }));
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -160,6 +211,42 @@ function renderHeaderActions() {
   button.setAttribute('title', state.isRefreshing ? 'Verversen' : 'Ververs data');
 }
 
+function renderTvGuide() {
+  const container = document.getElementById('tv-guide-days');
+  if (!container) return;
+  const guideDays = createGuideDays();
+
+  if (!guideDays.length) {
+    container.innerHTML = '<div class="session-match">Geen komende sessies in de huidige data. Ververs zodra de nieuwe kalender beschikbaar is.</div>';
+    return;
+  }
+
+  container.innerHTML = guideDays.map((day, dayIndex) => `
+    <section class="tv-day">
+      <div class="tv-day-title">
+        <span>${escapeHtml(guideLabel(day.date, dayIndex))}</span>
+        <span class="tv-day-date">${escapeHtml(formatDate(day.date))}</span>
+      </div>
+      <div class="session-list">
+        ${day.events.map((event) => {
+          const round = roundLabel(`${event.event} ${(event.matches || []).map(formatMatch).join(' ')}`);
+          return `
+            <article class="session-card">
+              <div class="session-time">${escapeHtml(event.time)}</div>
+              <div>
+                <div class="session-title">${escapeHtml(sessionPart(event.time))} · ${escapeHtml(event.title)}</div>
+                <div class="session-match">${escapeHtml(matchSummary(event.matches))}</div>
+                ${round ? `<div class="round-chip">${escapeHtml(round)}</div>` : ''}
+              </div>
+              <div class="session-channel">${escapeHtml(event.channel)}</div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `).join('');
+}
+
 function renderDateTabs(days) {
   const container = document.getElementById('date-tabs');
   const todayString = getTodayString();
@@ -180,6 +267,7 @@ function renderDateTabs(days) {
 function renderCalendar() {
   const days = createWindowDays();
   document.getElementById('calendar-meta').textContent = `${APP_VERSION} · gecontroleerd: ${updatedAt || sourceMeta?.calendar?.snapshotDate || '-'}`;
+  renderTvGuide();
   renderDateTabs(days);
 
   const container = document.getElementById('day-list');
